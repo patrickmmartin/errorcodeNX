@@ -9,6 +9,9 @@
 
 #include <iostream>
 
+#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
+#include "catch.hpp"
+
 // this class merely supplies a namespace for holding errors
 class FooErrors
 {
@@ -33,12 +36,15 @@ error_code const B = FooErrors::EBAR;
 
 // TODO(PMM) as an apologia for the lack of switch, example dispatch class to dispatch on error type
 
+bool dispatch_default_called = false;
+bool dispatch_foo_called = false;
+
 template <const char * errtype>
 class ErrorDispatcher {
 private:
     error_code _errtype;
     void dispatchError() {
-        std::cout << "ErrorDispatcher - default handler!" << std::endl;
+        dispatch_default_called = true;
     };
 public:
 
@@ -52,53 +58,47 @@ public:
 
 };
 
+
 template<>
 void ErrorDispatcher<FooErrors::EFOO>::dispatchError()
 {
-    std::cout << "ErrorDispatcher<Foo::EFOO>! NOT default handler - " << _errtype << std::endl;
+    dispatch_foo_called = true;
 };
 
 
-
-int main(int arc, char * argv[])
-{
+TEST_CASE( "test values directly", "[errorcode]" ) {
 
 	// the concept can be used directly for a basic unique error condition
 	error_code raw_foo = FooErrors::EBAR;
 
-	if (raw_foo == FooErrors::EFOO)
-	{
-		std::cout << raw_foo << std::endl;
-	}
-	else if (raw_foo == FooErrors::EBAR)
-	{
-		std::cout << raw_foo << std::endl;
-	}
+	INFO("testing raw values");
+	CHECK((raw_foo == FooErrors::EBAR));
+	CHECK((raw_foo != FooErrors::EFOO));
+
+}
+
+TEST_CASE( "test wrapper for error", "[errorcode]" ) {
 
 	// or the template used and value can be inspected, along with the additional payload
 	foo_err err("foo is not a bar - thirst ensues");
 
-	if (err.type() == FooErrors::EFOO)
-	{
-		std::cout << "FOO ERROR " << err.what() << std::endl;
-	}
+	INFO("testing wrapped values");
+	CHECK((err.type() == FooErrors::EFOO));
+	CHECK((err.type() != FooErrors::EBAR));
 
-	if (err.type() == FooErrors::EBAR)
-	{
-		std::cout << "BAZONG ERROR " << err.what() << std::endl;
-	}
+}
 
-	// or make use of the overload
-	if (err == FooErrors::EFOO)
-	{
-		std::cout << "FOO ERROR " << err.what() << std::endl;
-	}
+TEST_CASE( "test wrapper for error overload", "[errorcode]" ) {
 
-	if (err == FooErrors::EBAR)
-	{
-		std::cout << "BAZONG ERROR " << err.what() << std::endl;
-	}
+	// or the template used and value can be inspected, along with the additional payload
+	foo_err err("foo is not a bar - thirst ensues");
 
+	CHECK((err == FooErrors::EFOO));
+	CHECK((err != FooErrors::EBAR));
+
+}
+
+TEST_CASE( "test exception instances", "[errorcode]" ) {
 
 	// another possible use of the template class is to have highly specific exception handling
 	try
@@ -107,11 +107,15 @@ int main(int arc, char * argv[])
 	}
 	catch (foo_err & e)
 	{
-		std::cout << "FOO THROWN " << e.what() << std::endl;
+		INFO("caught in foo_err handler");
 	}
 	catch (bar_err & e)
 	{
-		std::cout << "BAZONG THROWN " << e.what() << std::endl;
+		FAIL("Fell through to bar_err handler");
+	}
+	catch (...)
+	{
+		FAIL("Fell through to catch all handler");
 	}
 
 	try
@@ -120,23 +124,29 @@ int main(int arc, char * argv[])
 	}
 	catch (foo_err & e)
 	{
-		std::cout << "FOO THROWN " << e.what() << std::endl;
+		FAIL("Caught in foo_err handler");
 	}
 	catch (bar_err & e)
 	{
-		std::cout << "BAZONG THROWN " << e.what() << std::endl;
+		INFO("in bar_err handler");
 	}
+	catch (...)
+	{
+		FAIL("Fell through to catch all handler");
+	}
+}
+
+TEST_CASE( "test dispatchers", "[errorcode]" ) {
 
 	// switch statements are basically just a problem -they mandate constants
 	// so nothing here
 
-	// TODO(PMM) - this has some use as allowing error handlers to be picked up
 	ErrorDispatcher<FooErrors::EFOO>()();
+	CHECK(dispatch_foo_called);
 
 	ErrorDispatcher<FooErrors::EBAR>()();
+	CHECK(dispatch_default_called);
 
 	// TODO(PMM) - next step is something that will achieve the same goals as a switch [shudder]
-
-
 
 }
