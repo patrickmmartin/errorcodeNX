@@ -150,3 +150,29 @@ TEST_CASE( "test dispatchers", "[errorcode]" ) {
 	// TODO(PMM) - next step is something that will achieve the same goals as a switch [shudder]
 
 }
+
+
+struct None { };
+
+template <typename H, typename T = None>
+struct typelist
+{
+    typedef H Head;
+    typedef T Tail;
+};
+
+
+typedef typelist<ErrorDispatcher<FooErrors::EFOO>,
+			typelist<ErrorDispatcher<FooErrors::EBAR>, None> >
+    	DispatchList;
+
+
+TEST_CASE( "test dispatcher typelist", "[errorcode]" ) {
+
+
+	DispatchList displist;
+
+	// TODO(PMM) - next step is something that will test an error_code
+
+}
+
