@@ -191,22 +191,47 @@ struct typelist
 };
 
 
-typedef typelist<ErrorDispatcher<FooErrors::EFOO>,
-			typelist<ErrorDispatcher<FooErrors::EBAR>, None> >
+
+// TODO(PMM) - next step is something that will achieve the same goals as a switch [shudder]
+
+
+struct NullType;
+
+template <error_code x, typename xs> struct ErrorList;
+
+template <typename T> struct OutputList;
+
+template <> struct OutputList<NullType> {
+  void operator()() {
+     std::cout << "Null" << std::endl;
+  }
+};
+
+template <int x, typename xs>
+   struct OutputList<ErrorList<x,xs> > {
+  void operator()() {
+    std::cout << x << ' ';
+    OutputList<xs>()();
+  }
+};
+
+
+typedef ErrorList<FooErrors::EFOO,
+			ErrorList<FooErrors::EBAR, NullType> >
     	DispatchList;
 
 
-// TODO(PMM) - next step is something that will achieve the same goals as a switch [shudder]
 
 
 TEST_CASE( "test dispatcher typelist", "[errorcode]" ) {
 
 
-	DispatchList displist;
+//	DispatchList displist;
 
 	// TODO(PMM) - next step is something that will test an error_code *value* and match
 
 	error_code foo = FooErrors::EFOO;
+
 
 
 
