@@ -34,37 +34,6 @@ error_code const A = FooErrors::EFOO;
 error_code const B = FooErrors::EBAR;
 
 
-// TODO(PMM) as an apologia for the lack of switch, example dispatch class to dispatch on error type
-
-bool dispatch_default_called = false;
-bool dispatch_foo_called = false;
-
-template <const char * errtype>
-class ErrorDispatcher {
-private:
-    error_code _errtype;
-    void dispatchError() {
-        dispatch_default_called = true;
-    };
-public:
-
-    ErrorDispatcher() { _errtype = errtype; }
-
-    void operator()()
-    {
-        // this member is provided by the specialisations
-    	dispatchError();
-    };
-
-};
-
-
-template<>
-void ErrorDispatcher<FooErrors::EFOO>::dispatchError()
-{
-    dispatch_foo_called = true;
-};
-
 
 TEST_CASE( "test values directly", "[errorcode]" ) {
 
@@ -105,7 +74,7 @@ TEST_CASE( "test exception instances", "[errorcode]" ) {
 	{
 		throw foo_err("foo != bar");
 	}
-	catch (foo_err & e)
+	catch (error_type<FooErrors::EFOO> & e)
 	{
 		INFO("caught in foo_err handler");
 	}
@@ -122,7 +91,7 @@ TEST_CASE( "test exception instances", "[errorcode]" ) {
 	{
 		throw bar_err("bazong not convertible to bar");
 	}
-	catch (foo_err & e)
+	catch (error_type<FooErrors::EFOO> & e)
 	{
 		FAIL("Caught in foo_err handler");
 	}
@@ -136,10 +105,44 @@ TEST_CASE( "test exception instances", "[errorcode]" ) {
 	}
 }
 
-TEST_CASE( "test dispatchers", "[errorcode]" ) {
+
+// TODO(PMM) as an apologia for the lack of switch, example dispatch class to dispatch on error type
+
+bool dispatch_default_called = false;
+bool dispatch_foo_called = false;
+
+template <error_code errtype>
+class ErrorDispatcher {
+private:
+    error_code _errtype;
+    void dispatchError() {
+        dispatch_default_called = true;
+    };
+public:
+
+    ErrorDispatcher() { _errtype = errtype; }
+
+    void operator()()
+    {
+        // this member is provided by the specialisations
+    	dispatchError();
+    };
+
+};
+
+
+TEST_CASE( "test static dispatchers", "[errorcode]" ) {
 
 	// switch statements are basically just a problem -they mandate constants
-	// so nothing here
+	// so nothing here for a nice clean syntax of switch
+
+	// However we can used template specialisation
+	// this caters for having set up a set of handlers in scope prepared in advance
+	// there is a single site to inherit all that handling
+	// this all works nicely because the code paths are defined at compile time
+
+	dispatch_default_called = false;
+	dispatch_foo_called = false;
 
 	ErrorDispatcher<FooErrors::EFOO>()();
 	CHECK(dispatch_foo_called);
@@ -147,7 +150,33 @@ TEST_CASE( "test dispatchers", "[errorcode]" ) {
 	ErrorDispatcher<FooErrors::EBAR>()();
 	CHECK(dispatch_default_called);
 
-	// TODO(PMM) - next step is something that will achieve the same goals as a switch [shudder]
+}
+
+
+
+template<>
+void ErrorDispatcher<FooErrors::EFOO>::dispatchError()
+{
+    dispatch_foo_called = true;
+};
+
+
+
+TEST_CASE( "test static dispatchers add case", "[errorcode]" ) {
+
+	// switch statements are basically just a problem -they mandate constants
+	// so nothing here for a nice clean syntax of switch
+
+	// However we can use template specialisation, as demonstrated below
+
+	dispatch_default_called = false;
+	dispatch_foo_called = false;
+
+	ErrorDispatcher<FooErrors::EFOO>()();
+	CHECK(dispatch_foo_called);
+
+	ErrorDispatcher<FooErrors::EBAR>()();
+	CHECK(dispatch_default_called);
 
 }
 
@@ -167,12 +196,24 @@ typedef typelist<ErrorDispatcher<FooErrors::EFOO>,
     	DispatchList;
 
 
+// TODO(PMM) - next step is something that will achieve the same goals as a switch [shudder]
+
+
 TEST_CASE( "test dispatcher typelist", "[errorcode]" ) {
 
 
 	DispatchList displist;
 
-	// TODO(PMM) - next step is something that will test an error_code
+	// TODO(PMM) - next step is something that will test an error_code *value* and match
+
+	error_code foo = FooErrors::EFOO;
+
+
+
+
+
+
 
 }
+
 
