@@ -51,6 +51,7 @@ TEST_CASE( "access values directly", "[errorcode]" ) {
 TEST_CASE( "constructing wrapper for error", "[exceptions]" ) {
 
 	// or the template used and value can be inspected, along with the additional payload
+	const char * msg = "foo is not a bar - thirst ensues";
 	foo_err err("foo is not a bar - thirst ensues");
 	foo_err err_blank;
 
@@ -60,14 +61,16 @@ TEST_CASE( "constructing wrapper for error", "[exceptions]" ) {
 		CHECK((err_blank.type() == FooErrors::EFOO));
 		CHECK((err_blank.type() != FooErrors::EBAR));
 		INFO(err_blank.what());
-		CHECK((err_blank.what() == FooErrors::EFOO));
+		CHECK(strcmp(err_blank.what(), FooErrors::EFOO) == 0);
 	}
 
-	SECTION("testing construction with")
+	SECTION("testing construction with additional string")
 	{
 		INFO("testing wrapped values");
 		CHECK((err.type() == FooErrors::EFOO));
 		CHECK((err.type() != FooErrors::EBAR));
+		INFO(err.what());
+		CHECK(err.what() == std::string(FooErrors::EFOO) + ". " + msg);
 	}
 
 }

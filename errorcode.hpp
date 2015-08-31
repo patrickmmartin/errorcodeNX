@@ -16,6 +16,7 @@
  *  Author: Patrick Martin
  */
 
+#include <string>
 #include <iostream>
 
 // ok, here's the big reveal...
@@ -36,12 +37,12 @@ template<error_code errtype>
 class typed_error : public std::exception
 {
 public:
-	typed_error(const char * what = "") :
-				_what(what) {};
+	typed_error(const char * what = NULL) :
+				_what(std::string(errtype) + ((what)?". ":"") + ((what)?what:"")) {};
+	~typed_error() throw() {}
 	virtual const char* what() const throw()
 	{
-		// TODO(PMM) - most things are allocating no memory - reducing churn would be desirable?
-		return (std::string(errtype) + ". " + _what).c_str();
+		return _what.c_str();
 	}
 	const char * type() const
 	{
@@ -53,7 +54,7 @@ public:
 	}
 
 private:
-	const char* _what;
+	const std::string _what;
 };
 
 
