@@ -29,7 +29,7 @@ const char FooErrors::EFOO[] = "GRP-FOO: Foo clobbered BAR on use";
 const char FooErrors::EBAR[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
 const char FooErrors::EPOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
 
-// we can define new unique instances
+// we can define new unique exception instances
 typedef typed_error<FooErrors::EFOO> foo_err;
 
 typedef typed_error<FooErrors::EBAR> bar_err;
@@ -49,15 +49,14 @@ const char N::new_bar[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
 
 TEST_CASE( "check macro works", "[errorcode]" ) {
 
-
 	INFO("testing raw values");
 	INFO(N::new_bar);
 	INFO("existential forgery of errors is not currently possible");
 	CHECK((N::new_bar != FooErrors::EBAR));
 	INFO("equality of errors generated the same way is possible");
-	CHECK(strcmp(N::new_bar, FooErrors::EBAR) == 0);
+	CHECK((strcmp(N::new_bar, FooErrors::EBAR) == 0));
 	INFO("verify the output of the macro");
-	CHECK(strcmp(N::new_bar, "GRP""-""FOO"": ""Foo not Bar") == 0);
+	CHECK((strcmp(N::new_bar, "GRP""-""FOO"": ""Foo not Bar") == 0));
 
 }
 
@@ -77,7 +76,7 @@ TEST_CASE( "constructing wrapper for error", "[exceptions]" ) {
 
 	// or the template used and value can be inspected, along with the additional payload
 	const char * msg = "foo is not a bar - thirst ensues";
-	foo_err err("foo is not a bar - thirst ensues");
+	foo_err err(msg);
 	foo_err err_blank;
 
 	SECTION("testing no-args construction")
@@ -86,7 +85,7 @@ TEST_CASE( "constructing wrapper for error", "[exceptions]" ) {
 		CHECK((err_blank.type() == FooErrors::EFOO));
 		CHECK((err_blank.type() != FooErrors::EBAR));
 		INFO(err_blank.what());
-		CHECK(strcmp(err_blank.what(), FooErrors::EFOO) == 0);
+		CHECK((strcmp(err_blank.what(), FooErrors::EFOO) == 0));
 	}
 
 	SECTION("testing construction with additional string")
@@ -95,7 +94,7 @@ TEST_CASE( "constructing wrapper for error", "[exceptions]" ) {
 		CHECK((err.type() == FooErrors::EFOO));
 		CHECK((err.type() != FooErrors::EBAR));
 		INFO(err.what());
-		CHECK(err.what() == std::string(FooErrors::EFOO) + ". " + msg);
+		CHECK((err.what() == std::string(FooErrors::EFOO) + ". " + msg));
 	}
 
 }
@@ -226,7 +225,6 @@ TEST_CASE( "demonstrate static dispatchers", "[errorcode]" ) {
 	CHECK(dispatch_default_called);
 
 }
-
 
 
 template<>
@@ -466,7 +464,7 @@ TEST_CASE( "checking returned wrapper for error", "[exceptions]" ) {
 		CHECK((err_blank.type() == LibA::EFOO));
 		CHECK((err_blank.type() != LibA::EBAR));
 		INFO(err_blank.what());
-		CHECK(strcmp(err_blank.what(), LibA::EFOO) == 0);
+		CHECK((strcmp(err_blank.what(), LibA::EFOO) == 0));
 	}
 
 	SECTION("testing construction with additional string")
@@ -475,14 +473,14 @@ TEST_CASE( "checking returned wrapper for error", "[exceptions]" ) {
 		CHECK((err.type() == LibA::EFOO));
 		CHECK((err.type() != LibA::EBAR));
 		INFO(err.what());
-		CHECK(err.what() == std::string(LibA::EFOO) + ". " + msg);
+		CHECK((err.what() == std::string(LibA::EFOO) + ". " + msg));
 	}
 
 }
 
 TEST_CASE( "ensure handling thrown exception instances works", "[exceptions]" ) {
 
-	// another possible use of the template class is to have highly specific exception handling
+	// check specific exception handling
 	SECTION("throw and catch typed_error<LibA::EFOO>")
 	{
 		try
@@ -528,7 +526,9 @@ TEST_CASE( "ensure handling thrown exception instances works", "[exceptions]" ) 
 		{
 			INFO(e.what());
 		}
+		catch (...)
+		{
+			FAIL("Fell through to catch all handler");
+		}
 	}
 }
-
-
