@@ -30,7 +30,6 @@ typedef char const * error_code;
 #define SCOPE_ERROR(grp, pkg, error_str) grp"-"pkg": "error_str
 
 
-
 // we can define a simple template parameterised upon "value"
 // this one has a base type and additional info
 template<error_code errtype>
@@ -48,7 +47,6 @@ public:
 	{
 		return errtype;
 	}
-	// TOOD(PMM) is this a help or a hindrance?
 	operator const char *()
 	{
 		return errtype;
