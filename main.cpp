@@ -161,8 +161,25 @@ TEST_CASE( "ensure throwing exception instances works", "[exceptions]" ) {
 		catch (...)
 		{
 			FAIL("Fell through to catch all handler");
+		}
 	}
+
+	SECTION("throw and catch std::exception")
+	{
+		try
+		{
+			throw bar_err("bazong not convertible to bar");
+		}
+		catch (std::exception & e)
+		{
+			INFO("in std::exception handler");
+		}
+		catch (...)
+		{
+			FAIL("Fell through to catch all handler");
+		}
 	}
+
 }
 
 
