@@ -29,10 +29,10 @@ typedef char const * error_code;
 // we can define a simple template parameterised upon "value"
 // this one has a base type and additional info
 template<error_code errtype>
-class error_type : public std::exception
+class typed_error : public std::exception
 {
 public:
-	error_type(const char * what = "") :
+	typed_error(const char * what = "") :
 			_what(what) {};
 	virtual const char* what() const throw()
 	{

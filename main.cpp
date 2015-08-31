@@ -27,9 +27,9 @@ const char FooErrors::EBAR[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
 const char FooErrors::EPOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
 
 // we can define new unique instances
-typedef error_type<FooErrors::EFOO> foo_err;
+typedef typed_error<FooErrors::EFOO> foo_err;
 
-typedef error_type<FooErrors::EBAR> bar_err;
+typedef typed_error<FooErrors::EBAR> bar_err;
 
 // or we can use the value directly
 error_code const A = FooErrors::EFOO;
@@ -76,7 +76,7 @@ TEST_CASE( "test exception instances", "[errorcode]" ) {
 	{
 		throw foo_err("foo != bar");
 	}
-	catch (error_type<FooErrors::EFOO> & e)
+	catch (typed_error<FooErrors::EFOO> & e)
 	{
 		INFO("caught in foo_err handler");
 	}
@@ -93,7 +93,7 @@ TEST_CASE( "test exception instances", "[errorcode]" ) {
 	{
 		throw bar_err("bazong not convertible to bar");
 	}
-	catch (error_type<FooErrors::EFOO> & e)
+	catch (typed_error<FooErrors::EFOO> & e)
 	{
 		FAIL("Caught in foo_err handler");
 	}
