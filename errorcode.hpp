@@ -37,7 +37,7 @@ class typed_error : public std::exception
 {
 public:
 	typed_error(const char * what = "") :
-			_what(what) {};
+				_what(what) {};
 	virtual const char* what() const throw()
 	{
 		// TODO(PMM) - most things are allocating no memory - reducing churn would be desirable?
