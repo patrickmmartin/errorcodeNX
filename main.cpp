@@ -37,7 +37,7 @@ error_code const B = FooErrors::EBAR;
 
 
 
-TEST_CASE( "test values directly", "[errorcode]" ) {
+TEST_CASE( "access values directly", "[errorcode]" ) {
 
 	// the concept can be used directly for a basic unique error condition
 	error_code raw_foo = FooErrors::EBAR;
@@ -48,18 +48,42 @@ TEST_CASE( "test values directly", "[errorcode]" ) {
 
 }
 
-TEST_CASE( "test wrapper for error", "[errorcode]" ) {
+TEST_CASE( "constructing wrapper for error", "[exceptions]" ) {
+
+	// or the template used and value can be inspected, along with the additional payload
+	foo_err err("foo is not a bar - thirst ensues");
+	foo_err err_blank;
+
+	SECTION("testing no-args construction")
+	{
+		INFO("testing comparison for wrapped values");
+		CHECK((err_blank.type() == FooErrors::EFOO));
+		CHECK((err_blank.type() != FooErrors::EBAR));
+		INFO(err_blank.what());
+		CHECK((err_blank.what() == FooErrors::EFOO));
+	}
+
+	SECTION("testing construction with")
+	{
+		INFO("testing wrapped values");
+		CHECK((err.type() == FooErrors::EFOO));
+		CHECK((err.type() != FooErrors::EBAR));
+	}
+
+}
+
+TEST_CASE( "access wrapper member for error_code", "[exceptions]" ) {
 
 	// or the template used and value can be inspected, along with the additional payload
 	foo_err err("foo is not a bar - thirst ensues");
 
-	INFO("testing wrapped values");
+	INFO("testing comparison wrapped values");
 	CHECK((err.type() == FooErrors::EFOO));
 	CHECK((err.type() != FooErrors::EBAR));
 
 }
 
-TEST_CASE( "test wrapper for error overload", "[errorcode]" ) {
+TEST_CASE( "access wrapper operator for error overload", "[exceptions]" ) {
 
 	// or the template used and value can be inspected, along with the additional payload
 	foo_err err("foo is not a bar - thirst ensues");
@@ -69,41 +93,47 @@ TEST_CASE( "test wrapper for error overload", "[errorcode]" ) {
 
 }
 
-TEST_CASE( "test exception instances", "[errorcode]" ) {
+TEST_CASE( "ensure throwing exception instances works", "[exceptions]" ) {
 
 	// another possible use of the template class is to have highly specific exception handling
-	try
+	SECTION("throw and catch typed_error<FooErrors::EFOO>")
 	{
-		throw foo_err("foo != bar");
-	}
-	catch (typed_error<FooErrors::EFOO> & e)
-	{
-		INFO("caught in foo_err handler");
-	}
-	catch (bar_err & e)
-	{
-		FAIL("Fell through to bar_err handler");
-	}
-	catch (...)
-	{
-		FAIL("Fell through to catch all handler");
+		try
+		{
+			throw foo_err("foo != bar");
+		}
+		catch (typed_error<FooErrors::EFOO> & e)
+		{
+			INFO("caught in foo_err handler");
+		}
+		catch (bar_err & e)
+		{
+			FAIL("Fell through to bar_err handler");
+		}
+		catch (...)
+		{
+			FAIL("Fell through to catch all handler");
+		}
 	}
 
-	try
+	SECTION("throw and catch typed_error<FooErrors::EBAR>")
 	{
-		throw bar_err("bazong not convertible to bar");
+		try
+		{
+			throw bar_err("bazong not convertible to bar");
+		}
+		catch (typed_error<FooErrors::EFOO> & e)
+		{
+			FAIL("Caught in foo_err handler");
+		}
+		catch (bar_err & e)
+		{
+			INFO("in bar_err handler");
+		}
+		catch (...)
+		{
+			FAIL("Fell through to catch all handler");
 	}
-	catch (typed_error<FooErrors::EFOO> & e)
-	{
-		FAIL("Caught in foo_err handler");
-	}
-	catch (bar_err & e)
-	{
-		INFO("in bar_err handler");
-	}
-	catch (...)
-	{
-		FAIL("Fell through to catch all handler");
 	}
 }
 
@@ -133,7 +163,7 @@ public:
 };
 
 
-TEST_CASE( "test static dispatchers", "[errorcode]" ) {
+TEST_CASE( "demonstrate static dispatchers", "[errorcode]" ) {
 
 	// switch statements are basically just a problem -they mandate constants
 	// so nothing here for a nice clean syntax of switch
@@ -167,7 +197,7 @@ void ErrorDispatcher<FooErrors::EFOO>::dispatchError()
 // so nothing here for a nice clean syntax of switch
 
 
-TEST_CASE( "test static dispatchers add case", "[errorcode]" ) {
+TEST_CASE( "demonstrate static dispatchers adding case", "[errorcode]" ) {
 
 	// However we can use template specialisation, as demonstrated below
 
@@ -271,7 +301,7 @@ struct CheckList<ErrorList<x,xs> > {
 };
 
 
-TEST_CASE( "test list handlers with fallthrough pass", "[errorcode]" ) {
+TEST_CASE( "demonstrate error typelist handlers with fallthrough pass", "[errorcode]" ) {
 
 	switch_default_pass_called = false;
 	switch_default_fail_called = false;
@@ -308,7 +338,7 @@ TEST_CASE( "test list handlers with fallthrough pass", "[errorcode]" ) {
 }
 
 
-TEST_CASE( "test list handlers with fallthrough fail", "[errorcode]" ) {
+TEST_CASE( "demonstrate typelist handlers with fallthrough fail", "[errorcode]" ) {
 
 	switch_default_pass_called = false;
 	switch_default_fail_called = false;
