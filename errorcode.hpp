@@ -21,7 +21,12 @@
 // ok, here's the big reveal...
 typedef char const * error_code;
 
-// This is a macro and as such the semantics need to be maintained
+/* Helper for concatenating argument in a standard
+ * This is just a macro, and as such the semantics of the argument list
+ * need to be maintained.
+ * If different usage is required, define a new macro, or overwrite the
+ * definition
+ */
 #define SCOPE_ERROR(grp, pkg, error_str) grp"-"pkg": "error_str
 
 
