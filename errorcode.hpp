@@ -37,12 +37,20 @@ template<error_code errtype>
 class typed_error : public std::exception
 {
 public:
-	typed_error(const char * what = NULL) :
-				_what(std::string(errtype) + ((what)?". ":"") + ((what)?what:"")) {};
-	~typed_error() throw() {}
+	typed_error(const char * what = NULL) :_what(NULL)
+				 {
+					if (what)
+					{
+						_what = new std::string(errtype);
+						*_what += ". ";
+						*_what += what;
+
+					}
+				 };
+	~typed_error() throw() { if (_what) delete _what; }
 	virtual const char* what() const throw()
 	{
-		return _what.c_str();
+		return (_what)?_what->c_str():type();
 	}
 	const char * type() const
 	{
@@ -54,7 +62,7 @@ public:
 	}
 
 private:
-	const std::string _what;
+	std::string * _what;
 };
 
 
