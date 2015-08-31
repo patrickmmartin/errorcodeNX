@@ -12,8 +12,10 @@
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
 #include "catch.hpp"
 
-// this class merely supplies a namespace for holding errors
-class FooErrors
+#include "LibA.h"
+
+// this struct merely supplies a namespace for holding errors
+struct FooErrors
 {
 public:
 	static const char EFOO[];
@@ -23,6 +25,7 @@ public:
 
 // this is a hand-crafted error definition
 const char FooErrors::EFOO[] = "GRP-FOO: Foo clobbered BAR on use";
+// and these use the convenience macro
 const char FooErrors::EBAR[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
 const char FooErrors::EPOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
 
@@ -35,6 +38,28 @@ typedef typed_error<FooErrors::EBAR> bar_err;
 error_code const A = FooErrors::EFOO;
 error_code const B = FooErrors::EBAR;
 
+
+// the concept can be used directly for a basic unique error condition
+struct N {
+	static const char new_bar[];
+};
+
+const char N::new_bar[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
+
+
+TEST_CASE( "check macro works", "[errorcode]" ) {
+
+
+	INFO("testing raw values");
+	INFO(N::new_bar);
+	INFO("existential forgery of errors is not currently possible");
+	CHECK((N::new_bar != FooErrors::EBAR));
+	INFO("equality of errors generated the same way is possible");
+	CHECK(strcmp(N::new_bar, FooErrors::EBAR) == 0);
+	INFO("verify the output of the macro");
+	CHECK(strcmp(N::new_bar, "GRP""-""FOO"": ""Foo not Bar") == 0);
+
+}
 
 
 TEST_CASE( "access values directly", "[errorcode]" ) {
@@ -140,8 +165,6 @@ TEST_CASE( "ensure throwing exception instances works", "[exceptions]" ) {
 	}
 }
 
-
-// TODO(PMM) as an apologia for the lack of switch, example dispatch class to dispatch on error type
 
 bool dispatch_default_called = false;
 bool dispatch_foo_called = false;
@@ -363,6 +386,7 @@ TEST_CASE( "demonstrate typelist handlers with fallthrough fail", "[errorcode]" 
 
     // exercising with variables
     K = FooErrors::EFOO;
+
     CheckList<ErrorsXYOnly>()(K);
     CHECK((switch_foo_called == true));
 
@@ -380,4 +404,114 @@ TEST_CASE( "demonstrate typelist handlers with fallthrough fail", "[errorcode]" 
 //    CheckList<ErrorsXYZ>()(K);
 
 }
+
+
+
+
+TEST_CASE( "check returned values", "[errorcode]" ) {
+
+	// the concept can be used directly for a basic unique error condition
+	SECTION("testing raw values")
+	{
+		error_code err;
+		err = LibA::return_me(0);
+		INFO(err);
+		CHECK((err != FooErrors::EBAR));
+		CHECK((err != FooErrors::EFOO));
+		CHECK((err == LibA::EFOO));
+
+		err = LibA::return_me(1);
+		INFO(err);
+		CHECK((err != FooErrors::EBAR));
+		CHECK((err != FooErrors::EFOO));
+		CHECK((err == LibA::EBAR));
+
+		err = LibA::return_me(-1);
+		INFO(err);
+		CHECK((err != FooErrors::EBAR));
+		CHECK((err != FooErrors::EFOO));
+	}
+
+
+
+
+}
+
+TEST_CASE( "checking returned wrapper for error", "[exceptions]" ) {
+
+	const char * msg = "foo is not a bar - thirst ensues";
+	typed_error<LibA::EFOO> err =  LibA::get_foo(msg);
+	typed_error<LibA::EFOO> err_blank = LibA::get_foo();
+
+	SECTION("testing no-args construction")
+	{
+		INFO("testing comparison for wrapped values");
+		CHECK((err_blank.type() == LibA::EFOO));
+		CHECK((err_blank.type() != LibA::EBAR));
+		INFO(err_blank.what());
+		CHECK(strcmp(err_blank.what(), LibA::EFOO) == 0);
+	}
+
+	SECTION("testing construction with additional string")
+	{
+		INFO("testing wrapped values");
+		CHECK((err.type() == LibA::EFOO));
+		CHECK((err.type() != LibA::EBAR));
+		INFO(err.what());
+		CHECK(err.what() == std::string(LibA::EFOO) + ". " + msg);
+	}
+
+}
+
+TEST_CASE( "ensure handling thrown exception instances works", "[exceptions]" ) {
+
+	// another possible use of the template class is to have highly specific exception handling
+	SECTION("throw and catch typed_error<LibA::EFOO>")
+	{
+		try
+		{
+			LibA::foo_me();
+		}
+		catch (typed_error<LibA::EFOO> & e)
+		{
+			INFO("caught in LibA::EFOO handler");
+		}
+		catch (...)
+		{
+			FAIL("Fell through to catch all handler");
+		}
+	}
+
+	SECTION("throw and catch typed_error<LibA::EBAR>")
+	{
+		try
+		{
+			LibA::bar_me();
+		}
+		catch (typed_error<LibA::EBAR> & e)
+		{
+			INFO("Caught in LibA::EFOO handler");
+		}
+		catch (...)
+		{
+			FAIL("Fell through to catch all handler");
+		}
+	}
+	SECTION("throw and catch unknown")
+	{
+		try
+		{
+			LibA::suprise_me();
+		}
+		catch (typed_error<LibA::EBAR> & e)
+		{
+			FAIL("Caught in LibA::EBAR handler");
+		}
+		catch (std::exception & e)
+		{
+			INFO(e.what());
+		}
+	}
+}
+
 

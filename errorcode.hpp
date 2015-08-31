@@ -9,13 +9,6 @@
 #define ERRORCODE_HPP_
 
 
-/*
- * main.cpp
- *
- *  Created on: 26 Aug 2015
- *  Author: Patrick Martin
- */
-
 #include <string>
 #include <iostream>
 
