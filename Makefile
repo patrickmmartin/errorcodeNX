@@ -1,5 +1,5 @@
 format:
-	clang-format-3.5 -i -style=Google*.h *.cpp *.hpp
+	clang-format-3.5 -i  *.h *.cpp *.hpp # was -style=Webkit
 	git status
 
 restore:
