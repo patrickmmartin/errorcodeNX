@@ -71,6 +71,28 @@ TEST_CASE("access values directly", "[errorcode]") {
   CHECK((raw_foo != FooErrors::EFOO));
 }
 
+
+TEST_CASE("throw an error_code directly", "[exceptions]") {
+
+
+  SECTION("throw EFOO") {
+      try
+      {
+         throw FooErrors::EFOO;
+      }
+      catch (error_code e)
+      {
+          INFO(e);
+      }
+      catch (...)
+      {
+          FAIL("did not trap error_code");
+      }
+  }
+}
+
+
+
 TEST_CASE("constructing wrapper for error", "[exceptions]") {
 
   // or the template used and value can be inspected, along with the additional
@@ -271,7 +293,7 @@ template <> struct CheckList<FailType> {
 /**
  * handler for the typelist of errors
  */
-template <error_code x, typename xs> struct CheckList<ErrorList<x, xs>> {
+template <error_code x, typename xs> struct CheckList<ErrorList<x, xs > > {
   void operator()(error_code n, bool &handled) {
     if (x == n) {
       handled = true;
@@ -300,7 +322,7 @@ TEST_CASE("demonstrate error typelist handlers with fallthrough pass",
    * passed in with fall-through
    * X, Y
    */
-  typedef ErrorList<FooErrors::EFOO, ErrorList<FooErrors::EBAR, PassType>>
+  typedef ErrorList<FooErrors::EFOO, ErrorList<FooErrors::EBAR, PassType> >
       ErrorsXY;
 
   // exercising with constants
@@ -333,7 +355,7 @@ TEST_CASE("demonstrate typelist handlers with fallthrough fail",
    * passed and fall-through is an error
    * X, Y
    */
-  typedef ErrorList<FooErrors::EFOO, ErrorList<FooErrors::EBAR, FailType>>
+  typedef ErrorList<FooErrors::EFOO, ErrorList<FooErrors::EBAR, FailType> >
       ErrorsXYOnly;
 
   // exercising with variables
