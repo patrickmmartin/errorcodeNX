@@ -49,9 +49,7 @@ TEST_CASE("check macro works", "[errorcode]") {
 
   INFO("testing raw values");
   INFO(N::new_bar);
-  INFO("existential forgery of errors is not currently possible");
-  CHECK((N::new_bar != FooErrors::EBAR));
-  INFO("equality of errors generated the same way is possible");
+  INFO("equality of error strings generated the same way is possible");
   CHECK((strcmp(N::new_bar, FooErrors::EBAR) == 0));
   INFO("verify the output of the macro");
   CHECK((strcmp(N::new_bar, "GRP"
@@ -59,6 +57,10 @@ TEST_CASE("check macro works", "[errorcode]") {
                             "FOO"
                             ": "
                             "Foo not Bar") == 0));
+
+  INFO("existential forgery of error_code is not possible");
+  CHECK((N::new_bar != FooErrors::EBAR));
+
 }
 
 TEST_CASE("access values directly", "[errorcode]") {
@@ -176,6 +178,20 @@ TEST_CASE("ensure throwing exception instances works", "[exceptions]") {
       FAIL("Fell through to catch all handler");
     }
   }
+
+  SECTION("existential forgery of typed_error is not possible") {
+    try {
+      CHECK((N::new_bar != FooErrors::EBAR));
+      throw typed_error<N::new_bar>("bazong not convertible to bar");
+    } catch (typed_error<N::new_bar> &e) {
+      INFO("in std::exception handler");
+    } catch (typed_error<FooErrors::EBAR> &e) {
+      FAIL("in typed_error<FooErrors::EBAR> handler");
+    } catch (...) {
+      FAIL("Fell through to catch all handler");
+    }
+  }
+
 }
 
 bool dispatch_default_called = false;
