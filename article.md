@@ -264,13 +264,15 @@ for error_code, this is quite simply not possible, even with full access to the 
 
 Now for the bad news...
 
-No switch (but ya ain't gonna need it)
-Can't return additional info. Well, by design most use cases do not make sense for a pure error code, this is where the python guys start laughing
+* No switch (but ya ain't gonna need it)
+* Can't return additional info.
+  - Well, by design most use cases do not make sense for a pure error code,
+  - let us pause as this is where the python guys start laughing
       (info, error) = attempt_the_thing()
 
-One missing use case in common with the integral values is the classic FILE_NOT_FOUND TABLE OR VIEW MISSING (but which?)
-If you really want to be helpful, create a wrapper for the error_code, or use typed_error
+* One missing use case in common with the integral values is the classic FILE_NOT_FOUND TABLE OR VIEW MISSING (but which?)
+  - If you really want to be helpful, create a wrapper for the error_code, or use typed_error
 
-Should these be translated for the user?
-Absolutely no. Because these can be used opaquely there is NO WAY the system can enforce avoiding making a serious security error by displaying an error of unknown origin and hence sensitivity to the end user
+* Should these be translated for the user?
+  - Absolutely no. Because these can be used opaquely there is NO WAY the system can enforce avoiding making a serious security error by displaying an error of unknown origin and hence sensitivity to the end user
 Instead choose what you want to be shown, and show that.
