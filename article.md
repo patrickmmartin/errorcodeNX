@@ -5,6 +5,12 @@ Point to cover
 * Accidental collisions exceptionally hard to impossible [depends upon definition?] 
 * Lots of good properties
 * Contrast with int, enum
+* maybe introduces some new ones (but the "better kind of problem"?)
+* "portability"
+ - 'twixt compilers
+ - 'twixt processes
+ - 'twixt processes of different builds?
+* for all the above, it is incumbent upon the code passing error_code between processes to implement some sensible marshalling and registration - the strings and the addresses are no use
 
 
 $PUNCHY_TITLE
