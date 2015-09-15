@@ -1,38 +1,41 @@
-Point to cover
-* Globally registered, linker handles it [standard section, dynamic loading etc.] [If patching your binary is your thing, then enjoy, but please aware what implications that process had]
-* Can (should) be used as an opaque value
-* Intentional collisions very hard
-* Accidental collisions exceptionally hard to impossible [depends upon definition?] 
-* Lots of good properties
-* Contrast with int, enum
-* maybe introduces some new ones (but the "better kind of problem"?)
-* "portability"
- - 'twixt compilers
- - 'twixt processes
- - 'twixt processes of different builds?
-* for all the above, it is incumbent upon the code passing error_code between processes to implement some sensible marshalling and registration - the strings and the addresses are no use
-
-
 $PUNCHY_TITLE
 
-Error handling is contentious and the strategies for implementing it in a large system are contentious, even in C21, it seems. [Google coding guidelines, others]
+Error handling is contentious and the strategies for implementing it in a large system are contentious even in C21, it seems. [Google coding guidelines, others]
 However, error handing is still important in general and especially so for C/C++ [citation needed]
 
-[Various horror stories]
-* Prophet web client, returning zero for 404
-* a function returns -9999 as status that is for a system essentially not in an error state. [The hilarious thing is, I know there are multiple different developers with their ears prickling at this point]
-
 Typically ints / enums are used.
-But...
-Composability is effectively broken, either we don't understand the value returned in and of itself, or we're forced to translate/ coerce it, so now the *consumer* doesn't understand it.
+But this has issues, where existing interfaces have defined their own subsets of return codes.
+Handling these mismatching interfaces requires a switch statement, with the risk of mismapping of new return codes introduced into lib_one_err_t.
+For example:
 
-Whereas for error_code
+```
+lib_one_err_t func1;
 
-Utility is completely global
-So values can be passed through opaquely
-[Example]
+lib_two_err_t func2()
+{
+    lib_one_err_t ret1= func1();
+    
+    if (ret1)
+    {
+        switch (ret1)
+        {
+          case LIB_ONE_ERR_TWO:
+              return LIB_TWO_ERR_TWO;
+          default:
+              return LIB_TWO_ERR_UNKNOWN;
+        }
+    }
+    return LIB_TWO_ERR_NONE;
+} 
+```
 
-Error conditions can be composed manually with little effort and much code hygiene
+Composability of the various interfaces making up the program is broken unless there is a global registry of return codes that is strictly mainained. Additionally, once third party libraries come into the picture, there will potentially more colliding values to wrap and return.  
+
+For the proposed error_code this is not an issue.
+
+The value is unique in the process, and values can be passed through opaquely from any callee to any caller.
+
+Error conditions can be composed manually with little effort and a clean style
 
     error_code ret;
     if (!ret = in())
@@ -56,29 +59,36 @@ Error conditions can be composed manually with little effort and much code hygie
          }
          else
          {
-             update_tmblr(ret); // FOR TEH LULZ
+             panic(ret);
          }
-    
     }
 
-This is new...
-Error conditions can be composed dynamically
-[Example]
+Also error conditions can now be composed dynamically 
 
-
-    error_code ret;
-    for (test_step : test_steps)
-    {
-     if (!ret = test_step(args))
-     {
-      log << "raised error [" << ret << "] in test step " << test_step;
-      return error_code;
-     }
-    }
-    
+```
+error_code ret;
+for (test_step : test_steps)
+{
+ if (!ret = test_step(args))
+ {
+  log << "raised error [" << ret << "] in test step " << test_step;
+  return error_code;
+ }
+}
+ ```
+ 
 There is no limit! [Caveat needed]
 
 What is this magical type?
+
+typedef const char * error_code;
+
+A char * const has a number of good properties
+* Globally registered, linker handles it [standard section, dynamic loading etc.] [If patching your binary is your thing, then enjoy, but please aware what implications that process had]
+* Can (should) be used as an opaque value
+* Intentional collisions very hard
+* Accidental collisions exceptionally hard to impossible [depends upon definition?] 
+* As a string constant, then inherently printing for logging purposses.
 
 For the brave souls relying upon exceptions, there is a whole raft of controversies/antipatterns. I won't do more than touch upon those, but the gist is 
 Don't do this:
@@ -167,6 +177,7 @@ The faustian bargain that is universality: since everyone could receive an error
 and used thus:
 
     const char LibA::EPOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
+
 which give us
 
     "GRP-FOO: Foo not reparable"
@@ -174,63 +185,7 @@ which give us
 organisations can exploit this, or other tricks, such as FILE, LINE
 
 So, what did I mean by "existential forgery"?
-
-this is a thing in Java: clearly too much of this will prevent a nice clean unwind 
-
-    void launderThrowable ( final Throwable ex )
-    {
-        if ( ex instanceof ExecutionException )
-        {
-            Throwable cause = ex.getCause( );
-         
-            if ( cause instanceof RuntimeException )
-            {
-                // Do not handle RuntimeExceptions
-                throw cause;
-            }
-        
-            if ( cause instanceof MyException )
-            {
-                // Intelligent handling of MyException
-            }
-            ...
-        }
-     }
-[from Java Concurrency in Action]
-
-existential forging is "liberating" a private numerical constant from its shackles in your callee's code base and re-using it
-
-example: 
-    
-    if (err == -9999) /* sigh. */
-
-similarly, in c++ defining an enum for your error handling *forces* us to do this
-
-
-    lib_one_err_t func1(...)
-        
-    lib_two_err_t func2(
-        
-    lib_one_err_t ret1= func1(...);
-        
-    if (ret1)
-    {
-        
-       switch (ret1)
-       {
-          case ONE_LIB_ERR_DB:
-              return TWO_LIB_ERR_DB;
-          default: // now what?
-              return TWO_LIB_UNEXPECTED; // some people like _UNKNOWN - they know who they are.
-                
-       }
-        
-    }
-    
-
-or we could take a chance and cast it to int ...
-
-neither of these are good IMHO
+In c++ defining an enum for the return type from error interface *forces* us to do this 
 
 hence a lot of code ported from C suffers from requiring analysis and changes (or you don't port it, and pass the problem on to the caller / future maintainers )
 
