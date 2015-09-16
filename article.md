@@ -6,7 +6,8 @@ However, error handing is still important in general and especially so for C/C++
 Typically ints / enums are used.
 But this has issues, where existing interfaces have defined their own subsets of return codes.
 Handling these mismatching interfaces requires a switch statement, with the risk of mismapping of new return codes introduced into lib_one_err_t.
-For example:
+
+For example, here is a c++ example:
 
 ```
 lib_one_err_t func1;
@@ -189,9 +190,7 @@ In c++ defining an enum for the return type from error interface *forces* us to 
 
 hence a lot of code ported from C suffers from requiring analysis and changes (or you don't port it, and pass the problem on to the caller / future maintainers )
 
-anyway enough with the bonfire of straw men
-
-for error_code, this is quite simply not possible, even with full access to the machinery [standard citation needed]
+for error_code, this is quite simply either very hard possible to impossible, even with full access to the machinery [ citation needed]
 
     const char N::new_bar[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
      
