@@ -34,7 +34,7 @@ Composability of the various interfaces making up the program is broken unless t
 
 For the proposed error_code this is not an issue.
 
-The value is unique in the process, and values can be passed through opaquely from any callee to any caller.
+The value is unique in the process, and as such can be used as an identity, whose values can be passed through opaquely from any callee to any caller.
 
 Error conditions can be composed manually with little effort and a clean style
 
@@ -100,7 +100,7 @@ Don't do this:
 IMHO People in systems supplying only a singly rooted object hierarchy for exceptions have made a pretty good job of making that work for them.
 
 So... extending this so that exceptions have the same global semantics, allowing the same properties of error_code to shine through would be good.
-Templates specialised on error_code are very apt
+Templates specialised on error_code are very apt:
 
     // we can define a simple template parameterised upon the error_code value
     // this one has a base type and optional additional info
@@ -170,8 +170,7 @@ and what is rather neat:
     } 
 
 
-The faustian bargain that is universality: since everyone could receive an error code, they may need to be handled to some level of consistency.
-
+The faustian bargain that is universality: since everyone could receive an error code, they may need to be handled to some level of consistency. This may well mandate some kind of scheme based upon library, component, etc. to generate standard values.
 
     #define SCOPE_ERROR(grp, pkg, error_str) grp "-" pkg ": " error_str
 
@@ -190,7 +189,7 @@ In c++ defining an enum for the return type from error interface *forces* us to 
 
 hence a lot of code ported from C suffers from requiring analysis and changes (or you don't port it, and pass the problem on to the caller / future maintainers )
 
-for error_code, this is quite simply either very hard possible to impossible, even with full access to the machinery [ citation needed]
+for error_code, this is quite simply either very hard to impossible, even with full access to the machinery [ citation needed]
 
     const char N::new_bar[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
      
@@ -218,15 +217,14 @@ for error_code, this is quite simply either very hard possible to impossible, ev
 
 Now for the bad news...
 
-* No switch (but ya ain't gonna need it)
-* Can't return additional info.
+* No `switch` (but ya ain't gonna need it so much because errors will in the main case only _need to be thrown and consumed_ )
+* Can't return additional info 
   - Well, by design most use cases do not make sense for a pure error code,
   - let us pause as this is where the python guys start laughing
-      (info, error) = attempt_the_thing()
+      ```(info, error) = attempt_the_thing()```
 
-* One missing use case in common with the integral values is the classic FILE_NOT_FOUND TABLE OR VIEW MISSING (but which?)
-  - If you really want to be helpful, create a wrapper for the error_code, or use typed_error
+    * One missing use case in common with the integral values is the classic FILE_NOT_FOUND TABLE OR VIEW MISSING (but which?) If it is useful to attach that parameter, then it seems reasonable that the consumer will need to request a pair<error_code, more_info>, use out parameters or devise some other scheme to compose the required data.
 
 * Should these be translated for the user?
   - Absolutely no. Because these can be used opaquely there is NO WAY the system can enforce avoiding making a serious security error by displaying an error of unknown origin and hence sensitivity to the end user
-Instead choose what you want to be shown, and show that.
+Instead choose what you want to be shown only at the appropriate call site, and do that then.
