@@ -3,11 +3,11 @@ $PUNCHY_TITLE
 Error handling is contentious and the strategies for implementing it in a large system are contentious even in C21, it seems. [Google coding guidelines, others]
 However, error handing is still important in general and especially so for C/C++ [citation needed]
 
-Typically ints / enums are used.
-But this has issues, where existing interfaces have defined their own subsets of return codes.
-Handling these mismatching interfaces requires a switch statement, with the risk of mismapping of new return codes introduced into lib_one_err_t.
+A very common style in C is using ```enum``` or ```int```. But this has significant issues, where interfaces are composed that have defined their own subsets of return codes. 
+In the case that a ```int``` is used, without a strictly enforced and maintained global registry of values, a function that needs to consume multiple interfaces and report errors encountered in its processing will have to inspect the return codes and itself define yet another set of error values. This leads to a proliferation of interfaces. However maintaining a global registry over a large source base has typically had mixed results.   
+The situation where an ```enum``` is used is even more problematic as in c++ handling these mismatching interfaces requires a switch statement, with the risk of mismapping of new return codes introduced into lib_one_err_t.
 
-For example, here is a c++ example:
+For example, here is a simple constructed example in c++:
 
 ```
 lib_one_err_t func1;
@@ -30,13 +30,14 @@ lib_two_err_t func2()
 } 
 ```
 
-Composability of the various interfaces making up the program is broken unless there is a global registry of return codes that is strictly mainained. Additionally, once third party libraries come into the picture, there will potentially more colliding values to wrap and return.  
+Note that subsequently introduced new error states in ```lib_one_err_t``` will potentially require updates in all places where values of this ```enum``` are examined. The net effect is that interfaces must handle all returned statuses conservatively, which certainly results in less sophisticated program behaviour, which is inefficient, and further opens up the possibility that there is an error in all this additional code.  
 
 For the proposed error_code this is not an issue.
 
-The value is unique in the process, and as such can be used as an identity, whose values can be passed through opaquely from any callee to any caller.
+The value is unique in the process, and as such can be used as an _identity_ concept, whose values can be passed through opaquely from any callee to any caller. Caller and callee can be separated by any number of layers of calls and yet the return values can be passed transparently back to a caller, allowing for less mandatory handling, resulting in less effort and less opportunity for erroneous handling. 
 
-Error conditions can be composed manually with little effort and a clean style
+As a result of these good properties, we can see the following styles are available.
+Example: error conditions can be composed manually with little effort and a clean style
 
     error_code ret;
     if (!ret = in())
@@ -64,7 +65,7 @@ Error conditions can be composed manually with little effort and a clean style
          }
     }
 
-Also error conditions can now be composed dynamically 
+Example: error conditions can now be composed dynamically .
 
 ```
 error_code ret;
@@ -82,14 +83,14 @@ There is no limit! [Caveat needed]
 
 What is this magical type?
 
+```
 typedef const char * error_code;
+```
 
-A char * const has a number of good properties
-* Globally registered, linker handles it [standard section, dynamic loading etc.] [If patching your binary is your thing, then enjoy, but please aware what implications that process had]
-* Can (should) be used as an opaque value
-* Intentional collisions very hard
-* Accidental collisions exceptionally hard to impossible [depends upon definition?] 
-* As a string constant, then inherently printing for logging purposses.
+An ```error_code``` value has a number of good properties.
+* Globally registered, the linker handles it [standard section, dynamic loading etc.] [If patching your binary is your thing, then enjoy, but please aware what implications that process had]
+* Can be used as an opaque value
+* Yet if a string constant, then inherently it supports printing for logging purposses.
 
 For the brave souls relying upon exceptions, there is a whole raft of controversies/antipatterns. I won't do more than touch upon those, but the gist is 
 Don't do this:
@@ -97,10 +98,7 @@ Don't do this:
 * Or rely upon catch (...)
 * Or always throw catch std::exception and check .what()
 
-IMHO People in systems supplying only a singly rooted object hierarchy for exceptions have made a pretty good job of making that work for them.
-
-So... extending this so that exceptions have the same global semantics, allowing the same properties of error_code to shine through would be good.
-Templates specialised on error_code are very apt:
+Extending an exception type such that it has the same global semantics of identity as error_code is useful for the same reasons. Templates specialised on error_code are very apt for this:
 
     // we can define a simple template parameterised upon the error_code value
     // this one has a base type and optional additional info
@@ -128,14 +126,14 @@ Templates specialised on error_code are very apt:
       std::string *_what;
     };    
 
-this allows:
+Example: this allows us to define exceptions concisely based upon and error_code.
 
+```
     // we can define new unique exception instances
     typedef typed_error<FooErrors::EFOO> foo_err;
      
     typedef typed_error<FooErrors::EBAR> bar_err;
-
-
+    
     try
     {
       // something that throws a typed_error
@@ -152,9 +150,9 @@ this allows:
     {
       // we don't get here
     }
+```
 
-
-and what is rather neat:
+And rather neatly we can avoid "false positives" in handling exceptions, allowing callees to throw an exception, relying upon callers higher in the stack to make the decision on how to handle that status.
 
     try
     {
@@ -170,17 +168,23 @@ and what is rather neat:
     } 
 
 
-The faustian bargain that is universality: since everyone could receive an error code, they may need to be handled to some level of consistency. This may well mandate some kind of scheme based upon library, component, etc. to generate standard values.
+The faustian bargain that is universality: since everyone could receive an error code, they may need to be handled to some level of consistency. This may well mandate some kind of scheme for declaring error_code - perhaps based upon library, component, etc. to generate standard values.
 
+    ```
     #define SCOPE_ERROR(grp, pkg, error_str) grp "-" pkg ": " error_str
-
+    ```
+    
 and used thus:
 
+```
     const char LibA::EPOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
+```
 
 which give us
 
+```
     "GRP-FOO: Foo not reparable"
+```
     
 organisations can exploit this, or other tricks, such as FILE, LINE
 
