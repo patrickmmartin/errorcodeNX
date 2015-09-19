@@ -1,9 +1,18 @@
 Defining and using a symbol analogue for error reporting in c++
+===============================================================
 
-Error handling is contentious and the strategies for implementing it in a large system are contentious even in C21, it seems. [Google coding guidelines, others]
+Overview
+--------
+
+High quality software requires a well defined and striaghtforward error handling strategy to allow a system to protect or check it's invariants in the face of untested inputs or configurations. There are many positions take on how to achieve this see [Google 2015], [Bloomberg 2015] [Mozilla 2015] [Wikipedia 2015], How to achieve this is contentious and the strategies for implementing it in a large system are contentious even in C21, it seems. [Google coding guidelines, others]
 However, error handing is still important in general and especially so for C/C++ [citation needed]
+In this article we will present an approach, which we'll call ```error_code``` which can be used an identity concept to ensure when a specific course of action is desired, the state reported by a failed API can be unambiguously recognised at arbitrarily remote call sites.
 
-A very common style in C is using ```enum``` or ```int```. But this has significant issues, where interfaces are composed that have defined their own subsets of return codes. 
+Review of c++ and C approaches
+-----------------------------
+
+A very common style in C is using ```enum``` or ```int``` TODO citations, HRESULT   . But this has significant issues, where interfaces are composed that have defined their own subsets of return codes, or HRESULT values need to be registered and reported.
+
 In the case that a ```int``` is used, without a strictly enforced and maintained global registry of values, a function that needs to consume multiple interfaces and report errors encountered in its processing will have to inspect the return codes and itself define yet another set of error values. This leads to a proliferation of interfaces. However maintaining a global registry over a large source base has typically had mixed results.   
 The situation where an ```enum``` is used is even more problematic as in c++ handling these mismatching interfaces requires a switch statement, with the risk of mismapping of new return codes introduced into lib_one_err_t.
 
@@ -32,38 +41,47 @@ lib_two_err_t func2()
 
 Note that subsequently introduced new error states in ```lib_one_err_t``` will potentially require updates in all places where values of this ```enum``` are examined. The net effect is that interfaces must handle all returned statuses conservatively, which certainly results in less sophisticated program behaviour, which is inefficient, and further opens up the possibility that there is an error in all this additional code.  
 
-For the proposed error_code this is not an issue.
+For the proposed ```error_code``` this is not an issue.
 
 The value is unique in the process, and as such can be used as an _identity_ concept, whose values can be passed through opaquely from any callee to any caller. Caller and callee can be separated by any number of layers of calls and yet the return values can be passed transparently back to a caller, allowing for less mandatory handling, resulting in less effort and less opportunity for erroneous handling. 
 
 As a result of these good properties, we can see the following styles are available.
 Example: error conditions can be composed manually with little effort and a clean style
 
-    error_code ret;
-    if (!ret = in())
-    {
-      if (!ret = a_galaxy())
-         {
-             if (!ret = far_far_away())
-             {
-                  awaken_force();
-             }
-         }
-    }
-        
-    if (ret)
-    {
-         // continuable errors here
-         if (ret != FORD_BROKEN_ANKLE) && (ret != FORD_TRANSPORTATION_INCIDENT)
-         {
-             print_local_failure(ret);
-             return ret;
-         }
-         else
-         {
-             panic(ret);
-         }
-    }
+```
+error_code ret;
+ 
+ret = in();
+if (ret)
+    return ret;
+    
+ret = a_galaxy();
+if (ret)
+    return ret;
+    
+ret = far_far_away();
+if (ret)
+    return ret;
+
+ret = awaken_force();
+    
+if (ret)
+{
+     // list known continuable errors here
+     if ((ret == E_FORD_BROKEN_ANKLE) || (ret == E_FORD_TRANSPORTATION_INCIDENT) &&
+         (Ford::scenes::in_the_can()))
+     {
+        print_local_failure(ret); // whoops!
+     }
+     else
+     {
+         panic(ret); // THIS FUNCTION DOES NOT RETURN
+     }
+}
+
+order_popcorn();
+
+```
 
 Example: error conditions can now be composed dynamically .
 
@@ -232,3 +250,9 @@ Now for the bad news...
 * Should these be translated for the user?
   - Absolutely no. Because these can be used opaquely there is NO WAY the system can enforce avoiding making a serious security error by displaying an error of unknown origin and hence sensitivity to the end user
 Instead choose what you want to be shown only at the appropriate call site, and do that then.
+
+
+[Google 2015, http://google.github.io/styleguide/cppguide.html ]
+[Bloomberg 2015, https://github.com/bloomberg/bde/wiki/CodingStandards.pdf]
+[Mozilla 2015, https://developer.mozilla.org/en-US/docs/Mozilla/Developer_guide/Coding_Style#Error_handling]
+[wikipedia 2015 https://en.wikipedia.org/wiki/HRESULT]
