@@ -1,4 +1,4 @@
-$PUNCHY_TITLE
+Defining and using a symbol analogue for error reporting in c++
 
 Error handling is contentious and the strategies for implementing it in a large system are contentious even in C21, it seems. [Google coding guidelines, others]
 However, error handing is still important in general and especially so for C/C++ [citation needed]
