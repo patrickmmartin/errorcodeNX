@@ -300,8 +300,13 @@ Because you do do that, right? ;-)
 
 
 [Google 2015, http://google.github.io/styleguide/cppguide.html ]
+
 [Bloomberg 2015, https://github.com/bloomberg/bde/wiki/CodingStandards.pdf]
+
 [Mozilla 2015, https://developer.mozilla.org/en-US/docs/Mozilla/Developer_guide/Coding_Style#Error_handling]
+
 [wikipedia 2015 https://en.wikipedia.org/wiki/HRESULT]
+
 [Ruby 2015 http://ruby-doc.org/core-1.9.3/Symbol.html]
+
 [Clojure 2015 http://clojure.org/data_structures#toc8]
