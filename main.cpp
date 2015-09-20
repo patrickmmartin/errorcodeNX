@@ -93,24 +93,24 @@ TEST_CASE("check values write correctly", "[errorcode]") {
 
   ostr << raw_foo;
   INFO(ostr.str());
-  CHECK(ostr.str() == "");
+  CHECK((ostr.str() == ""));
 
   snprintf(buf, sizeof(buf), "%s", raw_foo);
   INFO(buf);
   std::string bufstr = buf;
-  CHECK(bufstr == buf);
+  CHECK((bufstr == buf));
 
 
   raw_foo = FooErrors::EBAR;
   ostr.str(""); ostr.clear();
   ostr << raw_foo;
   INFO(ostr.str());
-  CHECK(ostr.str() == FooErrors::EBAR);
+  CHECK((ostr.str() == FooErrors::EBAR));
 
   snprintf(buf, sizeof(buf), "%s", raw_foo);
   bufstr = buf;
   INFO(bufstr);
-  CHECK(bufstr == std::string(FooErrors::EBAR));
+  CHECK((bufstr == std::string(FooErrors::EBAR)));
 
 
 
