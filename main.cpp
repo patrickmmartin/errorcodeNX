@@ -42,14 +42,17 @@ error_code const B = FooErrors::EBAR;
 
 // the concept can be used directly for a basic unique error condition
 struct N {
+  static const char new_foo[];
   static const char new_bar[];
+  static const char new_foo2[];
 };
 
 const char N::new_bar[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
+const char N::new_foo[] = SCOPE_ERROR_UNIQUE("GRP", "FOO", "Foo not Bar");
+const char N::new_foo2[] = SCOPE_ERROR_UNIQUE("GRP", "FOO", "Foo not Bar");
 
 TEST_CASE("check macro works", "[errorcode]") {
 
-  INFO("testing raw values");
   INFO(N::new_bar);
   INFO("equality of error strings generated the same way is possible");
   CHECK((strcmp(N::new_bar, FooErrors::EBAR) == 0));
@@ -60,8 +63,10 @@ TEST_CASE("check macro works", "[errorcode]") {
                             ": "
                             "Foo not Bar") == 0));
 
-  INFO("existential forgery of error_code is not possible");
+  INFO(N::new_bar);
   CHECK((N::new_bar != FooErrors::EBAR));
+  INFO(N::new_foo2);
+  CHECK((N::new_foo != N::new_foo2));
 
 }
 
