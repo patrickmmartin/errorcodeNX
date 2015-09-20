@@ -5,16 +5,16 @@ Problem statement
 --------
 
 High quality software requires a well defined and straightforward error handling strategy to allow a system to protect or check its invariants in the face of unexpected input or runtime state. There are many positions take on how to achieve this see [Google 2015], [Bloomberg 2015] [Mozilla 2015] [Wikipedia 2015]. It can be argued that the issue is not yet a solved problem and the strategies for implementing it in a large system are debated even now.
-However, error handing is still everyone's responsibility and particularly so for the applications coded in c++ and C. In this article we will make a proposal, which we'll call ```error_code``` which can be used an _identity_ concept (with a little "c") to ensure when a specific course of action is desired, the error state reported by a failed API can be unambiguously recognised at arbitrarily remote call sites. Note that Ruby's symbols [Ruby 2015] and Clojure's keywords [Clojure 2015] supply similar concepts at the language level.
+However, error handing is still everyone's responsibility and particularly so for the applications coded in c++ and C. In this article we will make a proposal, which we'll call ```error_code``` which can be used an _identity_ concept (concept with a little "c") to ensure when a specific course of action is desired, the error state reported by a failed API can be unambiguously recognised at arbitrarily remote call sites. Note that Ruby's symbols [Ruby 2015] and Clojure's keywords [Clojure 2015] supply similar concepts at the language level.
 
 Review of c++ and C approaches
 ------------------------------
 
-A very common style in C/c++ is using ```enum``` or ```int``` values or instead encode a value and some additional category info into an integral value like HRESULT. However the ```enum``` and ```int```  have significant issues  when interfaces are composed that have defined their own subsets of return codes, and HRESULT-style values need to be registered, reported and handled consistently.
+A very common style for reporting from functions in C/c++ is using ```enum``` or ```int``` values or instead encode a value and some additional category info into an integral value like HRESULT. However the ```enum``` and ```int```  have significant issues  when interfaces are composed that have defined their own subsets of return codes, and HRESULT-style values need to be registered, reported and handled consistently.
 
 Consider the case for an ```int``` return status, a library of functions that wishes to consume other library interfaces and report errors without simply passing through values will have to inspect the return codes and itself define yet another set of error values and map from one type to the other. This leads to a proliferation of interfaces and code paths as applications are composed from these libraries. This results in issues from the ongoing maintenance of the code paths mapping errors originating from different libraries for the consumption of various clients.
 
-The situation where an ```enum``` is used is even more problematic as handling these mismatching interfaces *requires* a switch statement, with the risk of mismapping of new return codes introduced into lib_one_err_t.
+The situation where an ```enum``` is used is even more problematic as handling these mismatching interfaces requires a switch statement, with the risk of mismapping of new return codes introduced into lib_one_err_t.
 
 ### Code Sample: A c++ wrapper that calls another library
 
@@ -44,14 +44,14 @@ Note that subsequently introduced new error states in ```lib_one_err_t``` will p
 
 If one is to stay with integral types, an HRESULT style approach is a good example of an alternative formulation. This style has the virtue of defining a global namepace of status codes, and allows use of the various bit cracking macros for extracting simple information from identifying individual values. However this approach relies crucially upon the quality of the global registry in a large source base and has typically had mixed results, [citation needed?].
 
-The end result is that without identities the solution tends towards the familiar _"a non zero return result indicates an error"_. Schemes have been constructed to allow additional information relevant to that status to be extracted, but composing them can be difficult or verbose.
+The end result is that without _identity_ the solution tends towards the familiar "a non zero return result indicates an error". Schemes have been constructed to allow additional information relevant to that status to be extracted, but composing them can be difficult or verbose.
 
 Error_code type proposal
 ------------------------
 
-The proposed type for error_code is this ```typedef const char * error_code```. TODO(PMM) STD: decl type for string constants!
+The proposed type for error_code is this ```typedef const char * error_code```.
 
-Interestingly, a search for prior art in this area reveals no prior suggestions, though we'd love to hear of any we have overlooked. The value is of course unique in the process, being a pointer. Note that it is implementation defined whether identical char[] constants could be folded into one pointer [c++ std lex.string para 13]. In fact, barring inspecting the program core at runtime, this constant folding one of the few ways to obtain the value _a priori_ without having access to the correct symbol in code.
+Interestingly, a search for prior art in this area reveals no prior suggestions, though we'd love to hear of any we have overlooked TODO(PMM) compiler authors ROFL?. The value is of course unique in the process, being a pointer. Note that it is implementation defined whether identical char[] constants could be folded into one pointer [c++ std lex.string para 13]. In fact, barring inspecting the program core at runtime, this constant folding one of the few ways to obtain the value _a priori_ without having access to the correct symbol in code. Note that so far we have not persuaded any compiler to actually fold two string constants and encounter this issue.
 
 As such, a constant of this type can be used as an _identity_ concept, whose values can be passed through opaquely from any callee to any caller. Caller and callee can be separated by any number of layers of calls and yet the return values can be passed transparently back to a caller, allowing for less mandatory handling, resulting in less effort and less opportunity for erroneous handling. 
 
@@ -90,7 +90,7 @@ An _error_code_  has a number of good properties, in addition to being a familia
 * it is a built in type - and has the correct sense: the comparison ```if (error)``` will test for presence of an error condition.
 * Safe for concurrent access
 * Globally registered, the linker handles it [standard section, dynamic loading etc.] [If patching your binary is your thing, then enjoy, but please aware what implications that process had]
-* Yet if the content is a printable string constant, (which we strongly recommend) then inherently it supports printing for logging purposes. TODO(PMM) how does it printf, stream when NULL?
+* Yet if the content is a printable string constant, (which we strongly recommend) then inherently it supports printing for logging purposes and can be read for debugging.
 
 Error_code usage examples - "C style"
 -------------------------------------
@@ -139,8 +139,8 @@ order_popcorn();
 error_code ret;
 for (test_step : test_steps)
 {
-    ret = test_step(args)
-    if (!ret)
+    ret = test_step(args);
+    if (ret)
     {
         log << "raised error [" << ret << "] in test step " << test_step;
         return error_code;
@@ -151,16 +151,15 @@ for (test_step : test_steps)
 Use of _error_code_ with exception based error handling
 ------------------------------------------------------
 
-Not everyone uses exceptions, and to be fair there has been a history or dubious standards in this area: 
+So far, all the previous code examples would have worked equally well _error_code_ were an integral type, however the identity of an _error_code_ is exploitable to provide good answers to a number of issues that can arise with deciding to use exceptions and also maintains the good properties of exception handling.
+
+Not everyone uses exceptions, and not everyone has used exceptions well; to be fair there has been a history of dubious prior art in this area. All the following are real world examples of code that went to production, or can be found in patent submissions, etc. The names of the guilty parties have been removed while we await the expiry of any relevant statutes.
 * ```throw 99```
 * ```catch (const char * err)```
-* Or rely upon `catch (...)```
-* Or rely on checking ```what()```
+* reliance upon `catch (...)```
+* reliance upon checking ```what()```
 
-All the above are real world examples of code that went to production, or can be found in patent submissions, etc.
-
-So far, all the previous code examples would have worked equally well _error_code_ were an integral type, however the identity of an _error_code_ is exploitable to provide good answers to a number of issues that can arise with deciding to use exceptions and also maintains the good properties of exception handling.
-For example: inheriting from one of the standard exception types such that it has the same global semantics of identity as _error_code_ is useful for the same reasons. There are quite a few techniques one can explore in this direction, but to pick a good example exception: class templates specialised on _error_code_ are very apt:
+However, making use of error_code and inheriting from one of the standard exception types such that it has the same  identity semantics is useful for the same reasons. There are quite a few techniques one can explore in this direction, but to pick a good example: exception class templates specialised on _error_code_ are very apt:
 
 ### Code Sample: exception template allowing exceptions with _identity_
 
@@ -191,10 +190,9 @@ For example: inheriting from one of the standard exception types such that it ha
     };    
 
 
-### Code Sample: define and hanlde exceptions concisely based upon an _error_code_
+### Code Sample: define and handle exceptions concisely based upon an _error_code_
 
 ```
-
     // elsewhere
     FooErrors::EFOO = "FOOlib: Foo error";
     
@@ -228,7 +226,7 @@ For example: inheriting from one of the standard exception types such that it ha
     }
 ```
 
-And rather neatly we can avoid "false matches" caused by code handling caused exception types over eagerly. 
+This approach has some rather neat properties: we can avoid "false matches" caused by code handling caused exception types over eagerly. The parameter has to be an error_code, not a string literal.
 Having a unified set of identities allows callees to throw an exception, relying upon callers higher in the stack to make the decision on how to handle that status, and avoiding the need re-throw the exception. Even if re-thrown - if the same _error_code_ is used, the _identity_ is of course preserved even if the stack at the point of re-throw is different from the originating thrower.
 
 ### Code Sample: exception handling with fall-through
@@ -239,7 +237,7 @@ Having a unified set of identities allows callees to throw an exception, relying
       // something that throws a typed_error<LibA::EPOR>
       // if LibA::EPOR ia not a publically visible value,
       // it is not possible to write a handler for that case only
-      // nor throw one, except for the code owning that identity TODO(PMM) check class identity
+      // nor throw one, except for the code owning that identity
     }
     catch (typed_error<LibA::EBAR> &e)
     {
@@ -251,7 +249,7 @@ Having a unified set of identities allows callees to throw an exception, relying
     } 
 ```
 
-TODO(PMM) - think about template instantiation.
+TODO(PMM) - think about possible template instantiation concerns.
 
 There is one responsibility that is granted along with the benefit of universality: since everyone could receive an error code, there may be a need to approach declaring _errode_code_ instances to some corporate standard of consistency. This may well mandate some kind of scheme perhaps based upon library, component, etc. to generate standard formats and ensure unique values.
 
@@ -264,8 +262,8 @@ Code Sample: simple example for generating "standard" error_code value.
     
     //which give us the string  "GRP-FOO: Foo not reparable"
     
-    // Organisations can exploit other preprocessor features to ensure uniqueness thus: TODO(PMM) check
-    #define SCOPE_ERROR_UNIQUE(grp, pkg, error_str) __FILE__ __LINE__ __DATE__ __TIME__ grp "-" pkg ": " error_str 
+    // Organisations can exploit other preprocessor features to ensure uniqueness
+    #define SCOPE_ERROR_UNIQUE(grp, pkg, error_str) __FILE__ "__LINE__" grp "-" pkg ": " error_str __DATE__ __TIME__ 
 ```
 
 No Existential Forgery of _error_code_
@@ -333,9 +331,7 @@ No solution is perfect, and this is no exception, so in the spirit of allowing p
 * The exception to the above statement which is a problem shared with the integral values is the classic ```FILE_NOT_FOUND```,  ```TABLE OR VIEW MISSING (but which?)``` return statues, which are a non-trivial source of frustration. If it is useful to attach that parameter, then it seems reasonable that the consumer will need to request a ```pair<error_code, more_info>```, use out parameters or devise some other scheme to compose the required data.
 
 * The strings cannot be translated dynamically
-  - For this objection, absolutely no. Because these can be used opaquely for an identity there is NO WAY the system can enforce a rule that avoids a developer making a serious security error by displaying an error of unknown origin and hence *unknown sensitivity* to the end user. Instead it is essential to choose what should be shown to whatever user is present at the call site under question, and do that translation at that point.
-
-* TODO out of process, dynamic loading etc. type concerns
+  - In principle displaying the _error_code_ where by design they can be passed around as an opaque value it is a security error to imagine the value should be renderered directly to an end user. Instead in general the system should determine should be shown to whatever the end user, and perform that translation at that point.
 
 Wrap up
 -------
@@ -352,10 +348,8 @@ Because you do do that, right? ;-)
 
 [Mozilla 2015, https://developer.mozilla.org/en-US/docs/Mozilla/Developer_guide/Coding_Style#Error_handling]
 
-[wikipedia 2015 https://en.wikipedia.org/wiki/HRESULT]
+[wikipedia 2015, https://en.wikipedia.org/wiki/HRESULT]
 
-[Ruby 2015 http://ruby-doc.org/core-1.9.3/Symbol.html]
+[Ruby 2015, http://ruby-doc.org/core-1.9.3/Symbol.html]
 
-[Clojure 2015 http://clojure.org/data_structures#toc8]
-
-[c++ standard TODO(PMM)]
+[Clojure 2015, http://clojure.org/data_structures#toc8]
