@@ -10,14 +10,14 @@ However, error handing is still everyone's responsibility and arguably particula
 Review of c++ and C approaches
 ------------------------------
 
-A very common style in C is using ```enum``` or ```int``` TODO citations, HRESULT   . But the former has significant issues, where interfaces are composed that have defined their own subsets of return codes, and HRESULT-style values need to be registered, reported and handled consistently.
+A very common style in C/c++ is using ```enum``` or ```int``` values or encode a value and some additional category info into an integral value like HRESULT. However the ```enum``` and ```int```  have significant issues  when interfaces are composed that have defined their own subsets of return codes, and HRESULT-style values need to be registered, reported and handled consistently.
 
-In the case that a ```int``` is used, without a strictly enforced and maintained global registry of values, a library of functions that needs to consume yet other libtrary interfaces and report errors encountered in its processing will have to inspect the return codes and itself define yet another set of error values. This leads to a proliferation of interfaces and code paths as applications are composed from these libraries. There is also the issue of ongoing maintenance of the code paths mapping errors originating from  different libraries for the consumption of various clients. And of cource, unless some mechanism is in place to capture the original error, the original identity of the error state is entirely lost.
-The situation where an ```enum``` is used is even more problematic as in c++ handling these mismatching interfaces requires a switch statement, with the risk of mismapping of new return codes introduced into lib_one_err_t.
-If one is to stay with integral types, an HRESULT style approach is a good example of an alternative formulation. This style has the strength of defining a gobal identity, though beyond using the various bit cracking macros for simple information, for identifying individual values this relies crucially upon the quality of the global registry over a large source base and has typically had mixed results, [citation needed?] 
+Consider the case for an ```int``` return status, a library of functions that wishes to consume other library interfaces and report errors without simply passing through values will have to inspect the return codes and itself define yet another set of error values and map from one type to the other. This leads to a proliferation of interfaces and code paths as applications are composed from these libraries. This results in issues from the ongoing maintenance of the code paths mapping errors originating from different libraries for the consumption of various clients.
 
+The situation where an ```enum``` is used is even more problematic as handling these mismatching interfaces *requires* a switch statement, with the risk of mismapping of new return codes introduced into lib_one_err_t.
+Note that subsequently introduced new error states in ```lib_one_err_t``` will potentially require updates in all places where values of this ```enum``` are examined. The net effect is that interfaces must handle all returned statuses conservatively, which certainly results in less sophisticated program behaviour, which is inefficient, and further opens up the possibility that there is an error in all this additional code.  
 
-For example, here is a simple constructed example of a wrapper that calls into another library in c++:
+### Code Sample: A c++ wrapper that calls another library
 
 ```
 lib_one_err_t func1;
@@ -41,14 +41,18 @@ lib_two_err_t func2()
 } 
 ```
 
-Note that subsequently introduced new error states in ```lib_one_err_t``` will potentially require updates in all places where values of this ```enum``` are examined. The net effect is that interfaces must handle all returned statuses conservatively, which certainly results in less sophisticated program behaviour, which is inefficient, and further opens up the possibility that there is an error in all this additional code.  
+If one is to stay with integral types, an HRESULT style approach is a good example of an alternative formulation. This style has the strength of defining a gobal identity, though beyond using the various bit cracking macros for simple information for identifying individual values this approach relies crucially upon the quality of the global registry over a large source base and has typically had mixed results, [citation needed?].
+
+The end result is that the solution tends towards the usual *a non zero return result indicates an error". Schemes have been constructed to allow additional information relevant to that status to be extracted, but composing them can be difficult or verbose.
 
 Error_code type proposal
 ------------------------
 
 The proposed type for error_code is this ```typedef const char * error_code```. TODO(PMM) STD: type for string constants!
 
-Interestingly, a search for prior art in this area reveals no prior suggestions, though we'd love to hear of any we have overlooked. The value is unique in the process, and as such can be used as an _identity_ concept, whose values can be passed through opaquely from any callee to any caller. Caller and callee can be separated by any number of layers of calls and yet the return values can be passed transparently back to a caller, allowing for less mandatory handling, resulting in less effort and less opportunity for erroneous handling. 
+Interestingly, a search for prior art in this area reveals no prior suggestions, though we'd love to hear of any we have overlooked. The value is unique in the process, being a pointer [c++ std lex.string para 13] though it is not ruled out that constant could be folded into another identical string, in fact, barring inspecting the program core, this one of the few ways to obtain the value without having access to the correct symbol.
+
+As such, a constant of this type can be used as an _identity_ concept, whose values can be passed through opaquely from any callee to any caller. Caller and callee can be separated by any number of layers of calls and yet the return values can be passed transparently back to a caller, allowing for less mandatory handling, resulting in less effort and less opportunity for erroneous handling. 
 
 TODO(PMM) example definition and declarations (and what won't work - literals _existential forgery_ )
 
