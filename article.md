@@ -255,15 +255,19 @@ There is one responsibility that is granted along with the benefit of universali
 
 Code Sample: simple example for generating "standard" error_code value.    
 ```
-    #define SCOPE_ERROR(grp, pkg, error_str) grp "-" pkg ": " error_str
+#define SCOPE_ERROR(grp, pkg, error_str) grp "-" pkg ": " error_str
+
+// this can be used thus
+const char LibA::EPOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
+
+//which give us the string  "GRP-FOO: Foo not reparable"
+
+// Organisations can exploit other preprocessor features to ensure uniqueness
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
+#define SCOPE_ERROR_UNIQUE(grp, pkg, error_str) __FILE__ ":" TOSTRING(__LINE__) " " grp "-" pkg ": " error_str " " __DATE__ " " __TIME__
     
-    // this can be used thus
-    const char LibA::EPOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
-    
-    //which give us the string  "GRP-FOO: Foo not reparable"
-    
-    // Organisations can exploit other preprocessor features to ensure uniqueness
-    #define SCOPE_ERROR_UNIQUE(grp, pkg, error_str) __FILE__ "__LINE__" grp "-" pkg ": " error_str __DATE__ __TIME__ 
 ```
 
 No Existential Forgery of _error_code_
@@ -276,13 +280,11 @@ The second is caused by the problem that integral types are a built in type and 
 
 ```
 case 42:
-    // we need to handle this concurrency
+    // due to known issue, we need to handle this concurrency bug state
     concurrency_action:
 ```    
 
-
 For error_code, making the same _faux pas_ this quite simply goes from hard SCOPED_ERROR(...) to (near) impossible SCOPED_ERROR_UNIQUE(...), even with full access to the machinery [ citation needed].
-
 
 Code Sample: Generation of identities and unique identities
 ```
@@ -309,7 +311,6 @@ catch (...)
 }
 ```
 
-
 What error_code cannot do
 -------------------------
 
@@ -318,7 +319,7 @@ No solution is perfect, and this is no exception, so in the spirit of allowing p
 * There is no stable value between processes / builds
     - this is unavoidable and the solution stops working at the boundary of the process - marshalling status codes between different processes, binaries and even different aged builds of the same code cannot rely upon the address. This is a job for some marshalling scheme layered on top of an existing status code system.
 
-* No `switch` statement
+* No ```switch``` statement
     - we do not see this as practically much of an issue as this only applies to code using raw _error_code_, and not exceptions and there are two main use cases:
     1. hand crafting the mapping between incompatible return statuses. For this we suggest it should not be necessary as error_code values would ideally only need to be thrown/returned and consumed 
     2. finally reaching code responsible for handling a set of specific codes differently. In this case, chained ```if/else if``` blocks for integral types should suffice.
@@ -328,17 +329,15 @@ No solution is perfect, and this is no exception, so in the spirit of allowing p
   - let us also pause, as this is where the python guys start laughing
       ```(info, error) = attempt_the_thing()``` there will be a suitable analoguous approach in c++
 
-* The exception to the above statement which is a problem shared with the integral values is the classic ```FILE_NOT_FOUND```,  ```TABLE OR VIEW MISSING (but which?)``` return statues, which are a non-trivial source of frustration. If it is useful to attach that parameter, then it seems reasonable that the consumer will need to request a ```pair<error_code, more_info>```, use out parameters or devise some other scheme to compose the required data.
+* The exception to the above statement, which is a problem shared with the integral values approach, is the classic ```FILE_NOT_FOUND```, ```TABLE OR VIEW MISSING``` return statues, where the next question is "but which?!". These are an ever-present and non-trivial source of frustration. If it is useful to attach that parameter, then it seems reasonable that the consumer will need to request a ```pair<error_code, more_info>```, use out parameters or devise some other scheme to compose the required data.
 
 * The strings cannot be translated dynamically
-  - In principle displaying the _error_code_ where by design they can be passed around as an opaque value it is a security error to imagine the value should be renderered directly to an end user. Instead in general the system should determine should be shown to whatever the end user, and perform that translation at that point.
+  - This is simply answered by observing they should not be translated, or displayed. This is because by design an  _error_code_ can be passed around as an opaque value, and hence in principle there is no mechanism to prevent the error in a secure system  of rendering unvalidated inputs directly to an end user. Instead in general the system should determine should be shown to whatever the end user, and perform that translation at that point.
 
 Wrap up
 -------
 
-In summary, once the perhaps slightly odd feeling of using  _error_code_ fades, we hope it is a technique that people will consider in composing larger systems and when they design the error handling strategy up front.
-Because you do do that, right? ;-)
-
+In summary, once the perhaps slightly odd feeling of using  _error_code_ fades, we hope it is a technique that people will adopt in composing larger systems when the error handling strategy is being designed. This approach will allow C and c++ libraries to become first class citizens in a design where error handling need never be left chance.
 
 ### References
 
