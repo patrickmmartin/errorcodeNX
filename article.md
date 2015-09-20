@@ -281,7 +281,8 @@ The second is caused by the problem that integral types are a built in type and 
 ```
 case 42:
     // due to known issue, we need to handle this concurrency bug state
-    concurrency_action:
+    concurrency_action();
+    break;
 ```    
 
 For error_code, making the same _faux pas_ this quite simply goes from hard SCOPED_ERROR(...) to (near) impossible SCOPED_ERROR_UNIQUE(...), even with full access to the machinery [ citation needed].
