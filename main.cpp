@@ -8,6 +8,8 @@
 #include "errorcode.hpp"
 
 #include <iostream>
+#include <sstream>
+#include <stdio.h>
 
 #define CATCH_CONFIG_MAIN // This tells Catch to provide a main() - only do this
                           // in one cpp file
@@ -72,6 +74,43 @@ TEST_CASE("access values directly", "[errorcode]") {
   CHECK((raw_foo == FooErrors::EBAR));
   CHECK((raw_foo != FooErrors::EFOO));
 }
+
+
+TEST_CASE("check values write correctly", "[errorcode]") {
+
+
+  char buf[1024] = {0};
+
+  error_code raw_foo = NULL;
+
+  INFO("testing raw values");
+  std::ostringstream ostr;
+
+  ostr << raw_foo;
+  INFO(ostr.str());
+  CHECK(ostr.str() == "");
+
+  snprintf(buf, sizeof(buf), "%s", raw_foo);
+  INFO(buf);
+  std::string bufstr = buf;
+  CHECK(bufstr == buf);
+
+
+  raw_foo = FooErrors::EBAR;
+  ostr.str(""); ostr.clear();
+  ostr << raw_foo;
+  INFO(ostr.str());
+  CHECK(ostr.str() == FooErrors::EBAR);
+
+  snprintf(buf, sizeof(buf), "%s", raw_foo);
+  bufstr = buf;
+  INFO(bufstr);
+  CHECK(bufstr == std::string(FooErrors::EBAR));
+
+
+
+  }
+
 
 
 TEST_CASE("throw an error_code directly", "[exceptions]") {
@@ -234,7 +273,7 @@ TEST_CASE("demonstrate static dispatchers", "[errorcode]") {
 
 template <> void ErrorDispatcher<FooErrors::EFOO>::dispatchError() {
   dispatch_foo_called = true;
-};
+}
 
 // switch statements are basically just a problem -they mandate constants
 // so nothing here for a nice clean syntax of switch
@@ -293,7 +332,7 @@ template <typename T> struct CheckList {};
  */
 template <> struct CheckList<PassType> {
   void operator()(error_code n, bool &handled) {
-    switch_default_pass_called = true;
+    switch_default_pass_called = true || (n) || handled;
   }
 };
 
@@ -302,7 +341,7 @@ template <> struct CheckList<PassType> {
  */
 template <> struct CheckList<FailType> {
   void operator()(error_code n, bool &handled) {
-    switch_default_fail_called = true;
+    switch_default_fail_called = true || (n) || handled;
   }
 };
 
