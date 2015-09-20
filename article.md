@@ -71,7 +71,7 @@ const char foo[] = "My Foo Status";
 // you can't do this (no existential forgery)
 
 error_code ret = get_an_error();
-if (ret == "My Foo Status") // does not compile
+if (ret == "My Foo Status") // does not compile with -Wall -Werror "comparison with string literal results in unspecified behaviour" 
 {
     ...
 }
