@@ -4,47 +4,66 @@ Defining and using a symbol analogue for error reporting in c++
 Problem statement
 --------
 
-High quality software requires a well defined and straightforward error handling strategy to allow a system to protect or check its invariants in the face of unexpected input or runtime state. There are many positions take on how to achieve this see [Google 2015], [Bloomberg 2015] [Mozilla 2015] [Wikipedia 2015]. It can be argued that the issue is not yet a solved problem and the strategies for implementing it in a large system are debated even now.
-However, error handing is still everyone's responsibility and particularly so for the applications coded in c++ and C. In this article we will make a proposal, which we'll call ```error_code``` which can be used an _identity_ concept (concept with a little "c") to ensure when a specific course of action is desired, the error state reported by a failed API can be unambiguously recognised at arbitrarily remote call sites. Note that Ruby's symbols [Ruby 2015] and Clojure's keywords [Clojure 2015] supply similar concepts at the language level.
+High quality software requires a well defined and straightforward error handling strategy to allow a system to protect or check its invariants in the face of unexpected input or runtime state. There are many positions taken on how to achieve this see [Google 2015], [Bloomberg 2015] [Mozilla 2015] [Wikipedia 2015]. It seems clear that there is not yet a concensus on the issue.
+However, error handing is still everyone's responsibility and particularly so for applications coded in c++ and C. In this article we will make a proposal, which we'll call ```error_code``` which can be used an _identity_ concept (concept with a little "c") to ensure when a specific course of action is desired, the error state reported by an API can be unambiguously recognised at arbitrarily remote call sites. Note that Ruby's symbols [Ruby 2015] and Clojure's keywords [Clojure 2015] supply similar concepts at the language level.
 
 Review of c++ and C approaches
 ------------------------------
 
-A very common style for reporting from functions in C/c++ is using ```enum``` or ```int``` values or instead encode a value and some additional category info into an integral value like HRESULT. However the ```enum``` and ```int```  have significant issues  when interfaces are composed that have defined their own subsets of return codes, and HRESULT-style values need to be registered, reported and handled consistently.
+A very common style for reporting from functions in C/c++ is using ```enum``` or ```int``` values to enumerate all possible reported returns, while a different approach is to encode a value and some additional category info into an integral value, forming a system of return status like HRESULT [Wikipedia 2015]. However different set of independent ```enum``` and ```int``` return values cause significant issues when interfaces must be composed that themselves define their own subsets of return codes. HRESULT-style status values do not have this issue, but a given system should have all possible error return statuses registered, so that they can be reported and handled consistently. This scales poorly to larger software system and note that in COM HRESULTS are used in IPC to widen the set of invoked binaries over and above even the modules loaded in-process.
 
-Consider the case for an ```int``` return status, a library of functions that wishes to consume other library interfaces and report errors without simply passing through values will have to inspect the return codes and itself define yet another set of error values and map from one type to the other. This leads to a proliferation of interfaces and code paths as applications are composed from these libraries. This results in issues from the ongoing maintenance of the code paths mapping errors originating from different libraries for the consumption of various clients.
+Consider the case for an ```int``` return status, a library of functions that wishes to consume other library interfaces and report errors cannot return any received values without indicating context, hence the simple ```return error;``` idiom cannot be used and simultaneously transmit the context that raised the error. The options are either map received return codes to a new set of non-overlapping values, or employ a wrapper class wrapping the native return value unmodified along with a indentifier of the failed API, a concept introduced at the level of the calling library. Global / thread-local variables are of course always possible, with the usual caveats.
 
-The situation where an ```enum``` is used is even more problematic as handling these mismatching interfaces requires a switch statement, with the risk of mismapping of new return codes introduced into lib_one_err_t.
+In c++, where an ```enum``` is used in otherwise similar way as far as the callee is concerned, it is even more problematic for the caller as handling these mismatching interfaces requires a switch statement, with the result of code bloat, risk of bugs in implementing mappings for new value and risk of bugs from omitted handling of new return codes introduced into callee libraries.
 
 ### Code Sample: A c++ wrapper that calls another library
 
 ```
 lib_one_err_t func1;
 
-lib_two_err_t func2()
+lib_two_err_t func2;
+
+lib_three_err_t func3()
 {
-    lib_one_err_t ret1= func1();
-    
-    if (ret1)
+    lib_one_err_t ret1 = func1();
+
+    if (ret1 != LIB_ONE_ERR_NONE)
     {
         switch (ret1)
         {
           case LIB_ONE_ERR_TWO:
-              return LIB_TWO_ERR_TWO;
+              return LIB_THREE_LIB1_ERR_TWO;
           default:
-              return LIB_TWO_ERR_UNKNOWN;
+              return LIB_THREE_LIB1_ERR_UNKNOWN; // or LIB_ONE_ERR_THREE
         }
     }
-    return LIB_TWO_ERR_NONE;
+    else
+    {
+        lib_two_err_t ret2 = func2();
+        
+        if (ret2 != LIB_TWO_ERR_NONE)
+        {
+            switch (ret2)
+            {
+              case LIB_TWO_ERR_TWO:
+                  return LIB_THREE_LIB2_ERR_TWO;
+              default:
+                  return LIB_THREE_LIB2_ERR_UNKNOWN; // or LIB_TWO_ERR_THREE
+            }
+        }
+    }
+    
+    
+    return LIB_THREE_ERR_NONE;
     ....
 } 
 ```
 
-Note that subsequently introduced new error states in ```lib_one_err_t``` will potentially require updates in all places where values of this ```enum``` are examined. The net effect is that interfaces must handle all returned statuses conservatively, which certainly results in less sophisticated program behaviour, which is inefficient, and further opens up the possibility that there is an error in all this additional code.  
+Note that subsequently introduced new error states in ```lib_one_err_t``` will potentially require updates in all places where values of this ```enum``` are examined if we do not want it to be handled as the unknown state. The net effect is that interfaces must handle all returned statuses conservatively, which certainly results in less sophisticated program behaviour, and further opens up the possibility that there is an error in all this additional code.  
 
 If one is to stay with integral types, an HRESULT style approach is a good example of an alternative formulation. This style has the virtue of defining a global namepace of status codes, and allows use of the various bit cracking macros for extracting simple information from identifying individual values. However this approach relies crucially upon the quality of the global registry in a large source base and has typically had mixed results, [citation needed?].
 
-The end result is that without _identity_ the solution tends towards the familiar "a non zero return result indicates an error". Schemes have been constructed to allow additional information relevant to that status to be extracted, but composing them can be difficult or verbose.
+The end result is that without access to a shared _identity_ of the status the solutions all tends towards the familiar "a non zero return result indicates an error", which is indeed sensibly enough the position of many error handling schemes employing return codes only. Schemes have been constructed to allow additional information relevant to that status to be extracted, but composing them can be difficult or verbose.
 
 Error_code type proposal
 ------------------------
