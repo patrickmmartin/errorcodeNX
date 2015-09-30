@@ -25,7 +25,9 @@ typedef char const *error_code;
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 
-#define SCOPE_ERROR_UNIQUE(grp, pkg, error_str) __FILE__ ":" TOSTRING(__LINE__) " " grp "-" pkg ": " error_str " " __DATE__ " " __TIME__
+#define SCOPE_ERROR_UNIQUE(grp, pkg, error_str)                                \
+  __FILE__ ":" TOSTRING(__LINE__) " " grp "-" pkg ": " error_str " " __DATE__  \
+                                  " " __TIME__
 
 // we can define a simple template parameterised upon "value"
 // this one has a base type and additional info
