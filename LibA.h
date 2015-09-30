@@ -18,7 +18,7 @@ public:
   static const char EFOO[];
   static const char EBAR[];
 
-  static error_code return_me(int input);
+  static error_id return_me(int input);
 
   static typed_error<EFOO> get_foo(const char *message = NULL);
 

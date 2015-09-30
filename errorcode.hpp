@@ -12,7 +12,7 @@
 #include <iostream>
 
 // ok, here's the big reveal...
-typedef char const *error_code;
+typedef char const *error_id;
 
 /* Helper for concatenating argument in a standard
  * This is just a macro, and as such the semantics of the argument list
@@ -31,7 +31,7 @@ typedef char const *error_code;
 
 // we can define a simple template parameterised upon "value"
 // this one has a base type and additional info
-template <error_code errtype> class typed_error : public std::exception {
+template <error_id errtype> class typed_error : public std::exception {
 public:
   typed_error(const char *what = NULL) : _what(NULL) {
     if (what) {

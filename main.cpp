@@ -37,8 +37,8 @@ typedef typed_error<FooErrors::EFOO> foo_err;
 typedef typed_error<FooErrors::EBAR> bar_err;
 
 // or we can use the value directly
-error_code const A = FooErrors::EFOO;
-error_code const B = FooErrors::EBAR;
+error_id const A = FooErrors::EFOO;
+error_id const B = FooErrors::EBAR;
 
 // the concept can be used directly for a basic unique error condition
 struct N {
@@ -73,7 +73,7 @@ TEST_CASE("check macro works", "[errorcode]") {
 TEST_CASE("access values directly", "[errorcode]") {
 
   // the concept can be used directly for a basic unique error condition
-  error_code raw_foo = FooErrors::EBAR;
+  error_id raw_foo = FooErrors::EBAR;
 
   INFO("testing raw values");
   CHECK((raw_foo == FooErrors::EBAR));
@@ -86,7 +86,7 @@ TEST_CASE("check values write correctly", "[errorcode]") {
 
   char buf[1024] = {0};
 
-  error_code raw_foo = NULL;
+  error_id raw_foo = NULL;
 
   INFO("testing raw values");
   std::ostringstream ostr;
@@ -126,7 +126,7 @@ TEST_CASE("throw an error_code directly", "[exceptions]") {
       {
          throw FooErrors::EFOO;
       }
-      catch (error_code e)
+      catch (error_id e)
       {
           INFO(e);
       }
@@ -241,9 +241,9 @@ TEST_CASE("ensure throwing exception instances works", "[exceptions]") {
 bool dispatch_default_called = false;
 bool dispatch_foo_called = false;
 
-template <error_code errtype> class ErrorDispatcher {
+template <error_id errtype> class ErrorDispatcher {
 private:
-  error_code _errtype;
+  error_id _errtype;
   void dispatchError() { dispatch_default_called = true; };
 
 public:
@@ -304,7 +304,7 @@ bool switch_foo_called = false;
 /**
  * an error handler template, for later use
  */
-template <error_code err_type> struct ErrorHandler;
+template <error_id err_type> struct ErrorHandler;
 
 /** specialisation for FooErrors::EFOO
  *
@@ -325,7 +325,7 @@ template <> struct ErrorHandler<FooErrors::EBAR> {
  */
 struct PassType;
 struct FailType;
-template <error_code x, typename xs> struct ErrorList;
+template <error_id x, typename xs> struct ErrorList;
 
 /** list checker template
  *
@@ -336,7 +336,7 @@ template <typename T> struct CheckList {};
  * one base case for the list checker
  */
 template <> struct CheckList<PassType> {
-  void operator()(error_code n, bool &handled) {
+  void operator()(error_id n, bool &handled) {
     switch_default_pass_called = true || (n) || handled;
   }
 };
@@ -345,7 +345,7 @@ template <> struct CheckList<PassType> {
  * one base case for the list checker
  */
 template <> struct CheckList<FailType> {
-  void operator()(error_code n, bool &handled) {
+  void operator()(error_id n, bool &handled) {
     switch_default_fail_called = true || (n) || handled;
   }
 };
@@ -353,8 +353,8 @@ template <> struct CheckList<FailType> {
 /**
  * handler for the typelist of errors
  */
-template <error_code x, typename xs> struct CheckList<ErrorList<x, xs > > {
-  void operator()(error_code n, bool &handled) {
+template <error_id x, typename xs> struct CheckList<ErrorList<x, xs > > {
+  void operator()(error_id n, bool &handled) {
     if (x == n) {
       handled = true;
       ErrorHandler<x>()();
@@ -364,7 +364,7 @@ template <error_code x, typename xs> struct CheckList<ErrorList<x, xs > > {
     }
   }
   // actual entry point
-  void operator()(error_code n) {
+  void operator()(error_id n) {
     bool handled = false;
     operator()(n, handled);
   }
@@ -391,7 +391,7 @@ TEST_CASE("demonstrate error typelist handlers with fallthrough pass",
   CheckList<ErrorsXY>()(FooErrors::EPOR);
 
   // exercising with variables
-  error_code K = FooErrors::EFOO;
+  error_id K = FooErrors::EFOO;
   CheckList<ErrorsXY>()(K);
   CHECK((switch_foo_called == true));
 
@@ -419,7 +419,7 @@ TEST_CASE("demonstrate typelist handlers with fallthrough fail",
       ErrorsXYOnly;
 
   // exercising with variables
-  error_code K = FooErrors::EFOO;
+  error_id K = FooErrors::EFOO;
 
   // exercising with variables
   K = FooErrors::EFOO;
@@ -446,7 +446,7 @@ TEST_CASE("check returned values", "[errorcode]") {
 
   // the concept can be used directly for a basic unique error condition
   SECTION("testing raw values") {
-    error_code err;
+    error_id err;
     err = LibA::return_me(0);
     INFO(err);
     CHECK((err != FooErrors::EBAR));
