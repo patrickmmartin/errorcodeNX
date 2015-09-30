@@ -70,7 +70,7 @@ error_id type proposal
 
 The proposed type for _error_id_ is fundamentally this:
 
-`typedef const char * const error_id`.
+`typedef char const * error_id`.
 
 Interestingly, a search for prior art in this area reveals no prior suggestions, though we'd love to hear of any we have overlooked TODO(PMM) compiler authors ROFL?. The value is of course unique in the process, being a pointer. Note that it is implementation defined whether identical char[] constants could be folded into one pointer [c++ std lex.string para 13]. In fact, barring inspecting the program core at runtime, this constant folding one of the few ways to obtain the value _a priori_ without having access to the correct symbol in code. Note that so far we have not persuaded any compiler to actually fold two string constants and encounter this issue.
 
