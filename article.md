@@ -5,7 +5,7 @@ Problem statement
 --------
 
 High quality software requires a well defined and straightforward error handling strategy to allow a system to protect or check its invariants in the face of unexpected input or runtime state. There are many positions taken on how to achieve this see [Google 2015], [Bloomberg 2015] [Mozilla 2015] [Wikipedia 2015]. It seems clear that there is not yet a concensus on the issue.
-However, error handing is still everyone's responsibility and particularly so for applications coded in c++ and C. In this article we will make a proposal, which we'll call ```error_code``` which can be used an _identity_ concept (concept with a little "c") to ensure when a specific course of action is desired, the error state reported by an API can be unambiguously recognised at arbitrarily remote call sites. Note that Ruby's symbols [Ruby 2015] and Clojure's keywords [Clojure 2015] supply similar concepts at the language level.
+However, error handing is still everyone's responsibility and particularly so for applications coded in c++ and C. In this article we will make a proposal, which we'll call ```error_id``` which can be used an _identity_ concept (concept with a little "c") to ensure when a specific course of action is desired, the error state reported by an API can be unambiguously recognised at arbitrarily remote call sites. Note that Ruby's symbols [Ruby 2015] and Clojure's keywords [Clojure 2015] supply similar concepts at the language level.
 
 Review of c++ and C approaches
 ------------------------------
@@ -65,20 +65,22 @@ If one is to stay with integral types, an HRESULT style approach is a good examp
 
 The end result is that without access to a shared _identity_ of the status the solutions all tends towards the familiar "a non zero return result indicates an error", which is indeed sensibly enough the position of many error handling schemes employing return codes only. Schemes have been constructed to allow additional information relevant to that status to be extracted, but composing them can be difficult or verbose.
 
-Error_code type proposal
+error_id type proposal
 ------------------------
 
-The proposed type for error_code is this ```typedef const char * error_code```.
+The proposed type for _error_id_ is fundamentally this:
+
+`typedef const char * const error_id`.
 
 Interestingly, a search for prior art in this area reveals no prior suggestions, though we'd love to hear of any we have overlooked TODO(PMM) compiler authors ROFL?. The value is of course unique in the process, being a pointer. Note that it is implementation defined whether identical char[] constants could be folded into one pointer [c++ std lex.string para 13]. In fact, barring inspecting the program core at runtime, this constant folding one of the few ways to obtain the value _a priori_ without having access to the correct symbol in code. Note that so far we have not persuaded any compiler to actually fold two string constants and encounter this issue.
 
 As such, a constant of this type can be used as an _identity_ concept, whose values can be passed through opaquely from any callee to any caller. Caller and callee can be separated by any number of layers of calls and yet the return values can be passed transparently back to a caller, allowing for less mandatory handling, resulting in less effort and less opportunity for erroneous handling. 
 
 
-### Code sample: defining an error_code
+### Code sample: defining an _error_id_
 
 ```
-error_code foo;
+error_id foo;
 
 ...
 
@@ -89,7 +91,7 @@ const char foo[] = "My Foo Status";
 
 // you can't do this (no existential forgery)
 
-error_code ret = get_an_error();
+error_id ret = get_an_error();
 if (ret == "My Foo Status") // does not compile with -Wall -Werror "comparison with string literal results in unspecified behaviour" 
 {
     ...
@@ -101,17 +103,17 @@ if (ret == foo) // this is how one must test for equality
 }
 ```
 
-Error_code  desirable properties 
+_error_id_  desirable properties 
 --------------------------------------------------
 
-An _error_code_  has a number of good properties, in addition to being a familiar type to all C/c++ programmers.
+An _error_id_  has a number of good properties, in addition to being a familiar type to all C/c++ programmers.
 
 * it is a built in type - and has the correct sense: the comparison ```if (error)``` will test for presence of an error condition.
 * Safe for concurrent access
 * Globally registered, the linker handles it [standard section, dynamic loading etc.] [If patching your binary is your thing, then enjoy, but please aware what implications that process had]
 * Yet if the content is a printable string constant, (which we strongly recommend) then inherently it supports printing for logging purposes and can be read for debugging.
 
-Error_code usage examples - "C style"
+error_id usage examples - "C style"
 -------------------------------------
 
 As a consequence of these good properties, we can see the following styles are available.
@@ -119,7 +121,7 @@ As a consequence of these good properties, we can see the following styles are a
 ### Code Sample: manual error handling (Mozilla style)
 
 ```
-error_code ret;
+error_id ret;
  
 ret = in();
 if (ret)
@@ -155,22 +157,22 @@ order_popcorn();
 ### Code Sample: error conditions can be composed dynamically
 
 ```
-error_code ret;
+error_id ret;
 for (test_step : test_steps)
 {
     ret = test_step(args);
     if (ret)
     {
         log << "raised error [" << ret << "] in test step " << test_step;
-        return error_code;
+        return error_id;
     }
 }
 ```
  
-Use of _error_code_ with exception based error handling
+Use of _error_id_ with exception based error handling
 ------------------------------------------------------
 
-So far, all the previous code examples would have worked equally well _error_code_ were an integral type, however the identity of an _error_code_ is exploitable to provide good answers to a number of issues that can arise with deciding to use exceptions and also maintains the good properties of exception handling.
+So far, all the previous code examples would have worked equally well _error_id_ were an integral type, however the identity of an _error_id_ is exploitable to provide good answers to a number of issues that can arise with deciding to use exceptions and also maintains the good properties of exception handling.
 
 Not everyone uses exceptions, and not everyone has used exceptions well; to be fair there has been a history of dubious prior art in this area. All the following are real world examples of code that went to production, or can be found in patent submissions, etc. The names of the guilty parties have been removed while we await the expiry of any relevant statutes.
 * ```throw 99```
@@ -178,14 +180,14 @@ Not everyone uses exceptions, and not everyone has used exceptions well; to be f
 * reliance upon `catch (...)```
 * reliance upon checking ```what()```
 
-However, making use of error_code and inheriting from one of the standard exception types such that it has the same  identity semantics is useful for the same reasons. There are quite a few techniques one can explore in this direction, but to pick a good example: exception class templates specialised on _error_code_ are very apt:
+However, making use of _error_id_ and inheriting from one of the standard exception types such that it has the same  identity semantics is useful for the same reasons. There are quite a few techniques one can explore in this direction, but to pick a good example: exception class templates specialised on _error_id_ are very apt:
 
 ### Code Sample: exception template allowing exceptions with _identity_
 
-    // we can define a simple template parameterised upon the error_code value
+    // we can define a simple template parameterised upon the error_id value
     // this template stores the base type and optionally some additional info if user specified
     // Note that a large chunk of the code is book keeping to keep the instance's data requirement to a minimum
-    template <error_code errtype> class typed_error : public std::runtime_exception {
+    template <error_id errtype> class typed_error : public std::runtime_exception {
     public:
       typed_error(const char *what = NULL) : _what(NULL) {
         if (what) {
@@ -209,7 +211,7 @@ However, making use of error_code and inheriting from one of the standard except
     };    
 
 
-### Code Sample: define and handle exceptions concisely based upon an _error_code_
+### Code Sample: define and handle exceptions concisely based upon an _error_id_
 
 ```
     // elsewhere
@@ -245,8 +247,8 @@ However, making use of error_code and inheriting from one of the standard except
     }
 ```
 
-This approach has some rather neat properties: we can avoid "false matches" caused by code handling caused exception types over eagerly. The parameter has to be an error_code, not a string literal.
-Having a unified set of identities allows callees to throw an exception, relying upon callers higher in the stack to make the decision on how to handle that status, and avoiding the need re-throw the exception. Even if re-thrown - if the same _error_code_ is used, the _identity_ is of course preserved even if the stack at the point of re-throw is different from the originating thrower.
+This approach has some rather neat properties: we can avoid "false matches" caused by code handling caused exception types over eagerly. The parameter has to be an _error_id_, not a string literal.
+Having a unified set of identities allows callees to throw an exception, relying upon callers higher in the stack to make the decision on how to handle that status, and avoiding the need re-throw the exception. Even if re-thrown - if the same _error_id_ is used, the _identity_ is of course preserved even if the stack at the point of re-throw is different from the originating thrower.
 
 ### Code Sample: exception handling with fall-through
 
@@ -272,7 +274,7 @@ TODO(PMM) - think about possible template instantiation concerns.
 
 There is one responsibility that is granted along with the benefit of universality: since everyone could receive an error code, there may be a need to approach declaring _errode_code_ instances to some corporate standard of consistency. This may well mandate some kind of scheme perhaps based upon library, component, etc. to generate standard formats and ensure unique values.
 
-Code Sample: simple example for generating "standard" error_code value.    
+Code Sample: simple example for generating "standard" _error_id_ value.    
 ```
 #define SCOPE_ERROR(grp, pkg, error_str) grp "-" pkg ": " error_str
 
@@ -289,7 +291,7 @@ const char LibA::EPOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
     
 ```
 
-No Existential Forgery of _error_code_
+No Existential Forgery of _error_id_
 --------------------------------------
 
 So, what do is conveyed by "existential forgery"?
@@ -304,7 +306,7 @@ case 42:
     break;
 ```    
 
-For error_code, making the same _faux pas_ this quite simply goes from hard SCOPED_ERROR(...) to (near) impossible SCOPED_ERROR_UNIQUE(...), even with full access to the machinery [ citation needed].
+For _error_id_, making the same _faux pas_ this quite simply goes from hard SCOPED_ERROR(...) to (near) impossible SCOPED_ERROR_UNIQUE(...), even with full access to the machinery [ citation needed].
 
 Code Sample: Generation of identities and unique identities
 ```
@@ -331,7 +333,7 @@ catch (...)
 }
 ```
 
-What error_code cannot do
+What _error_id_ cannot do
 -------------------------
 
 No solution is perfect, and this is no exception, so in the spirit of allowing people to choose for themselves, let us list the main concerns one would come up with and address them:
@@ -340,24 +342,24 @@ No solution is perfect, and this is no exception, so in the spirit of allowing p
     - this is unavoidable and the solution stops working at the boundary of the process - marshalling status codes between different processes, binaries and even different aged builds of the same code cannot rely upon the address. This is a job for some marshalling scheme layered on top of an existing status code system.
 
 * No ```switch``` statement
-    - we do not see this as practically much of an issue as this only applies to code using raw _error_code_, and not exceptions and there are two main use cases:
-    1. hand crafting the mapping between incompatible return statuses. For this we suggest it should not be necessary as error_code values would ideally only need to be thrown/returned and consumed 
+    - we do not see this as practically much of an issue as this only applies to code using raw _error_id_, and not exceptions and there are two main use cases:
+    1. hand crafting the mapping between incompatible return statuses. For this we suggest it should not be necessary as _error_id_ values would ideally only need to be thrown/returned and consumed 
     2. finally reaching code responsible for handling a set of specific codes differently. In this case, chained ```if/else if``` blocks for integral types should suffice.
     
 * Can't return additional info 
-  - this is by design as we assume most use cases do not make sense for a pure _error_code_ identity,
+  - this is by design as we assume most use cases do not make sense for a pure _error_id_ identity,
   - let us also pause, as this is where the python guys start laughing
       ```(info, error) = attempt_the_thing()``` there will be a suitable analoguous approach in c++
 
-* The exception to the above statement, which is a problem shared with the integral values approach, is the classic ```FILE_NOT_FOUND```, ```TABLE OR VIEW MISSING``` return statues, where the next question is "but which?!". These are an ever-present and non-trivial source of frustration. If it is useful to attach that parameter, then it seems reasonable that the consumer will need to request a ```pair<error_code, more_info>```, use out parameters or devise some other scheme to compose the required data.
+* The exception to the above statement, which is a problem shared with the integral values approach, is the classic ```FILE_NOT_FOUND```, ```TABLE OR VIEW MISSING``` return statues, where the next question is "but which?!". These are an ever-present and non-trivial source of frustration. If it is useful to attach that parameter, then it seems reasonable that the consumer will need to request a ```pair<error_id, more_info>```, use out parameters or devise some other scheme to compose the required data.
 
 * The strings cannot be translated dynamically
-  - This is simply answered by observing they should not be translated, or displayed. This is because by design an  _error_code_ can be passed around as an opaque value, and hence in principle there is no mechanism to prevent the error in a secure system  of rendering unvalidated inputs directly to an end user. Instead in general the system should determine should be shown to whatever the end user, and perform that translation at that point.
+  - This is simply answered by observing they should not be translated, or displayed. This is because by design an  _error_id_ can be passed around as an opaque value, and hence in principle there is no mechanism to prevent the error in a secure system  of rendering unvalidated inputs directly to an end user. Instead in general the system should determine should be shown to whatever the end user, and perform that translation at that point.
 
 Wrap up
 -------
 
-In summary, once the perhaps slightly odd feeling of using  _error_code_ fades, we hope it is a technique that people will adopt in composing larger systems when the error handling strategy is being designed. This approach will allow C and c++ libraries to become first class citizens in a design where error handling need never be left chance.
+In summary, once the perhaps slightly odd feeling of using  _error_id_ fades, we hope it is a technique that people will adopt in composing larger systems when the error handling strategy is being designed. This approach will allow C and c++ libraries to become first class citizens in a design where error handling need never be left chance.
 
 ### References
 
