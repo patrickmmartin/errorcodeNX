@@ -55,7 +55,6 @@ TEST_CASE("check macro works", "[errorcode]") {
   CHECK((N::new_bar != FooErrors::EBAR));
   INFO(N::new_foo2);
   CHECK((N::new_foo != N::new_foo2));
-
 }
 
 TEST_CASE("access values directly", "[errorcode]") {
@@ -68,9 +67,7 @@ TEST_CASE("access values directly", "[errorcode]") {
   CHECK((raw_foo != FooErrors::EFOO));
 }
 
-
 TEST_CASE("check values write correctly", "[errorcode]") {
-
 
   char buf[1024] = {0};
 
@@ -89,7 +86,8 @@ TEST_CASE("check values write correctly", "[errorcode]") {
   CHECK((bufstr == buf));
 
   raw_foo = FooErrors::EBAR;
-  ostr.str(""); ostr.clear();
+  ostr.str("");
+  ostr.clear();
   ostr << raw_foo;
   INFO(ostr.str());
   CHECK((ostr.str() == FooErrors::EBAR));
@@ -98,12 +96,7 @@ TEST_CASE("check values write correctly", "[errorcode]") {
   bufstr = buf;
   INFO(bufstr);
   CHECK((bufstr == std::string(FooErrors::EBAR)));
-
-
-
-  }
-
-
+}
 
 TEST_CASE("check returned values", "[errorcode]") {
 
@@ -128,4 +121,3 @@ TEST_CASE("check returned values", "[errorcode]") {
     CHECK((err != FooErrors::EFOO));
   }
 }
-

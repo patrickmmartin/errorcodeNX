@@ -14,10 +14,6 @@ const char FooErrors::EFOO[] = "GRP-FOO: Foo clobbered BAR on use";
 const char FooErrors::EBAR[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
 const char FooErrors::EPOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
 
-const char * FooErrors::EFOO2 = "GRP-FOO: Foo clobbered BAR on use";
+const char *FooErrors::EFOO2 = "GRP-FOO: Foo clobbered BAR on use";
 
-
-void throw_EFOO()
-{
-    throw FooErrors::EFOO;
-}
+void throw_EFOO() { throw FooErrors::EFOO; }

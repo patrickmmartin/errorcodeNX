@@ -13,10 +13,10 @@
 
 // ok, here's the big reveal...
 // the rvalue
-typedef const char * const error_id;
+typedef const char *const error_id;
 
 // and the lvalue
-typedef const char * error_value;
+typedef const char *error_value;
 
 /* Helper for concatenating argument in a standard
  * This is just a macro, and as such the semantics of the argument list
