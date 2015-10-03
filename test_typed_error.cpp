@@ -15,30 +15,24 @@
 
 #include "LibA.h"
 
-namespace {
-
-// this struct merely supplies a namespace for holding errors
-struct FooErrors {
-  static const char EFOO[];
-  static const char EBAR[];
-  static const char EPOR[];
-};
-
-// this is a hand-crafted error definition
-const char FooErrors::EFOO[] = "GRP-FOO: Foo clobbered BAR on use";
-// and these use the convenience macro
-const char FooErrors::EBAR[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
-const char FooErrors::EPOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
+#include "fooerrors.h"
 
 // we can define new unique exception instances
 typedef typed_error<FooErrors::EFOO> foo_err;
 
 typedef typed_error<FooErrors::EBAR> bar_err;
 
-// or we can use the value directly
-error_id const A = FooErrors::EFOO;
-error_id const B = FooErrors::EBAR;
+// note that we can deny use of some error_id values, while preserving comparison
+// here we can't use FooErrors::EFOO2 as it is declared as a pointer, not array
+//typedef typed_error<FooErrors::EFOO2> foo2_err;
 
+
+// or we can use the value directly
+error_id A = FooErrors::EFOO;
+error_id B = FooErrors::EBAR;
+error_id C = FooErrors::EFOO2;
+
+namespace {
 // the concept can be used directly for a basic unique error condition
 struct N {
   static const char new_foo[];
@@ -49,15 +43,18 @@ struct N {
 const char N::new_bar[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
 const char N::new_foo[] = SCOPE_ERROR_UNIQUE("GRP", "FOO", "Foo not Bar");
 const char N::new_foo2[] = SCOPE_ERROR_UNIQUE("GRP", "FOO", "Foo not Bar");
+}
 
 
-TEST_CASE("throw an error_code directly", "[exceptions]") {
+
+TEST_CASE("throw an error_id from this translation unit", "[exceptions]") {
 
 
-  SECTION("throw EFOO") {
+  SECTION("throw new_bar") {
       try
       {
-         throw FooErrors::EFOO;
+          throw N::new_bar;
+          FAIL("should not be on this side of throw");
       }
       catch (error_id e)
       {
@@ -65,9 +62,50 @@ TEST_CASE("throw an error_code directly", "[exceptions]") {
       }
       catch (...)
       {
-          FAIL("did not trap error_code");
+          FAIL("did not trap error_id");
       }
   }
+}
+
+
+TEST_CASE("throw an error_id indirectly", "[exceptions]") {
+
+
+  SECTION("throw EFOO") {
+      try
+      {
+          // note we can't throw FooErrors::EFOO, but they can for us
+          // TODO(PMM) existential forgery
+          throw_EFOO();
+          FAIL("should not be on this side of throw");
+      }
+      catch (error_id e)
+      {
+          INFO(e);
+      }
+      catch (...)
+      {
+          FAIL("did not trap error_id");
+      }
+  }
+
+  SECTION("throw EFOO") {
+      try
+      {
+          // note we can throw FooErrors::EFOO2
+          throw FooErrors::EFOO2;
+          FAIL("should not be on this side of throw");
+      }
+      catch (error_id e)
+      {
+          INFO(e);
+      }
+      catch (...)
+      {
+          FAIL("did not trap error_id");
+      }
+  }
+
 }
 
 
@@ -97,7 +135,7 @@ TEST_CASE("constructing wrapper for error", "[exceptions]") {
   }
 }
 
-TEST_CASE("access wrapper member for error_code", "[exceptions]") {
+TEST_CASE("access wrapper member for error_id", "[exceptions]") {
 
   // or the template used and value can be inspected, along with the additional
   // payload
@@ -408,6 +446,4 @@ TEST_CASE("ensure handling thrown exception instances works", "[exceptions]") {
       FAIL("Fell through to catch all handler");
     }
   }
-}
-
 }

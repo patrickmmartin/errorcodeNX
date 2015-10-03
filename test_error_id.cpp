@@ -15,20 +15,7 @@
 
 #include "LibA.h"
 
-namespace {
-
-// this struct merely supplies a namespace for holding errors
-struct FooErrors {
-  static const char EFOO[];
-  static const char EBAR[];
-  static const char EPOR[];
-};
-
-// this is a hand-crafted error definition
-const char FooErrors::EFOO[] = "GRP-FOO: Foo clobbered BAR on use";
-// and these use the convenience macro
-const char FooErrors::EBAR[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
-const char FooErrors::EPOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
+#include "fooerrors.h"
 
 // we can define new unique exception instances
 typedef typed_error<FooErrors::EFOO> foo_err;
@@ -39,6 +26,7 @@ typedef typed_error<FooErrors::EBAR> bar_err;
 error_id const A = FooErrors::EFOO;
 error_id const B = FooErrors::EBAR;
 
+namespace {
 // the concept can be used directly for a basic unique error condition
 struct N {
   static const char new_foo[];
@@ -49,6 +37,7 @@ struct N {
 const char N::new_bar[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
 const char N::new_foo[] = SCOPE_ERROR_UNIQUE("GRP", "FOO", "Foo not Bar");
 const char N::new_foo2[] = SCOPE_ERROR_UNIQUE("GRP", "FOO", "Foo not Bar");
+}
 
 TEST_CASE("check macro works", "[errorcode]") {
 
@@ -140,5 +129,3 @@ TEST_CASE("check returned values", "[errorcode]") {
   }
 }
 
-
-}
