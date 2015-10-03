@@ -5,75 +5,30 @@ Problem statement
 --------
 
 High quality software requires a well defined and straightforward error handling strategy to allow a system to protect or check its invariants in the face of unexpected input or runtime state. There are many positions taken on how to achieve this see [Google 2015], [Bloomberg 2015] [Mozilla 2015] [Wikipedia 2015]. It seems clear that there is not yet a concensus on the issue.
-However, error handing is still everyone's responsibility and particularly so for applications coded in c++ and C. In this article we will make a proposal, which we'll call ```error_id``` which can be used an _identity_ concept (concept with a little "c") to ensure when a specific course of action is desired, the error state reported by an API can be unambiguously recognised at arbitrarily remote call sites. Note that Ruby's symbols [Ruby 2015] and Clojure's keywords [Clojure 2015] supply similar concepts at the language level.
+However, error handing is still everyone's responsibility and particularly so for applications coded in c++ and C. In this article we will make a proposal, which we'll call `error_id` which can be used an _identity_ concept (concept with a little "c") to ensure when a specific course of action is desired, the error state reported by an API can be unambiguously recognised at arbitrarily remote call sites. Note that Ruby's symbols [Ruby 2015] and Clojure's keywords [Clojure 2015] supply similar concepts supported at the language level.
 
 Review of c++ and C approaches
 ------------------------------
 
-A very common style for reporting from functions in C/c++ is using ```enum``` or ```int``` values to enumerate all possible reported returns, while a different approach is to encode a value and some additional category info into an integral value, forming a system of return status like HRESULT [Wikipedia 2015]. However different set of independent ```enum``` and ```int``` return values cause significant issues when interfaces must be composed that themselves define their own subsets of return codes. HRESULT-style status values do not have this issue, but a given system should have all possible error return statuses registered, so that they can be reported and handled consistently. This scales poorly to larger software system and note that in COM HRESULTS are used in IPC to widen the set of invoked binaries over and above even the modules loaded in-process.
+A very common style for reporting from functions in C/c++ is using ```enum``` or ```int``` values to enumerate all possible reported statuses and returning these values from library calls. An extension of this approach is to encode a value and some additional category info into an integral value, forming a system of return statuses like HRESULT [Wikipedia 2015]. However these different set of independent ```enum``` and ```int``` return values cause significant issues when interfaces must be composed that themselves must define new return statuses. HRESULT-style status values do not have this issue, but a given system must have all possible error return statuses registered, so that they can be reported and handled consistently. This scales poorly to larger software system. Note that in COM HRESULTS can in principle be the outcome of IPC calls, thus extending other universes of HRESULT values.
+It is possible to define even more complex error handling schemes, such as registering callbacks or having an explicit error stack. And finally, global or thread-local system library variables for an `errno` style approach are of course available, with the usual basket of caveats.
 
-Consider the case for an ```int``` return status, a library of functions that wishes to consume other library interfaces and report errors cannot return any received values without indicating context, hence the simple ```return error;``` idiom cannot be used and simultaneously transmit the context that raised the error. The options are either map received return codes to a new set of non-overlapping values, or employ a wrapper class wrapping the native return value unmodified along with a indentifier of the failed API, a concept introduced at the level of the calling library. Global / thread-local variables are of course always possible, with the usual caveats.
-
-In c++, where an ```enum``` is used in otherwise similar way as far as the callee is concerned, it is even more problematic for the caller as handling these mismatching interfaces requires a switch statement, with the result of code bloat, risk of bugs in implementing mappings for new value and risk of bugs from omitted handling of new return codes introduced into callee libraries.
-
-### Code Sample: A c++ wrapper that calls another two libraries
-
-```
-lib_one_err_t func1;
-
-lib_two_err_t func2;
-
-lib_three_err_t func3()
-{
-    lib_one_err_t ret1 = func1();
-
-    if (ret1 != LIB_ONE_ERR_NONE)
-    {
-        switch (ret1)
-        {
-          case LIB_ONE_ERR_TWO:
-              return LIB_THREE_LIB1_ERR_TWO;
-          default:
-              return LIB_THREE_LIB1_ERR_UNKNOWN; // or LIB_ONE_ERR_THREE
-        }
-    }
-    else
-    {
-        lib_two_err_t ret2 = func2();
-        
-        if (ret2 != LIB_TWO_ERR_NONE)
-        {
-            switch (ret2)
-            {
-              case LIB_TWO_ERR_TWO:
-                  return LIB_THREE_LIB2_ERR_TWO;
-              default:
-                  return LIB_THREE_LIB2_ERR_UNKNOWN; // or LIB_TWO_ERR_THREE
-            }
-        }
-    }
-    
-    
-    return LIB_THREE_ERR_NONE;
-    ....
-} 
-```
-
-Note that subsequently introduced new error states in ```lib_one_err_t``` will potentially require updates in all places where values of this ```enum``` are examined if we do not want it to be handled as the unknown state. The net effect is that interfaces must handle all returned statuses conservatively, which certainly results in less sophisticated program behaviour, and further opens up the possibility that there is an error in all this additional code.  
-
-If one is to stay with integral types, an HRESULT style approach is a good example of an alternative formulation. This style has the virtue of defining a global namepace of status codes, and allows use of the various bit cracking macros for extracting simple information from identifying individual values. However this approach relies crucially upon the quality of the global registry in a large source base and has typically had mixed results, [citation needed?].
-
-The end result is that without access to a shared _identity_ of the status the solutions all tends towards the familiar "a non zero return result indicates an error", which is indeed sensibly enough the position of many error handling schemes employing return codes only. Schemes have been constructed to allow additional information relevant to that status to be extracted, but composing them can be difficult or verbose.
+Fundamentally, when library boundaries are crossed the net outcome is that without access to a shared _identity_ type whose value describes the status the solutions all tends towards the familiar "a non zero return result indicates an error", which is indeed sensibly enough the position of many error handling schemes employing return codes only. Schemes have been constructed to allow additional information relevant to that status to be extracted, but composing them can be difficult or verbose.
+The concern is that a large amount of code becomes devoted to merely mapping values between the return code sets of various libraries, which has a number of critiques on how this will scale:
+* claiming to handle the return codes from dependency systems (and transitively via their dependencies) is a forward commitment, which may or not remain valid over time
+* the amount of code written / code paths will result in issues
+* the most prudent approach is to have a consistent "non-zero return code indicates an error" policy, which has the deficiency of requiring all library clients "opt into" the steps required to obtain more information on a failed operation
 
 error_id type proposal
 ------------------------
 
 The proposed type for _error_id_ is fundamentally this: `typedef const char * const error_id` which is the _rvalue_ whereas the _lvalue_ is of course `typedef const char * error_value`.
 
-Interestingly, a brief search for prior art in this area reveals no prior proposals, though we'd love to hear of any we have overlooked TODO(PMM) compiler authors ROFL?. The value is of course unique in the process, being a pointer. Note that it is implementation defined whether identical char[] constants could be folded into one pointer [c++ std lex.string para 13]. In fact, barring inspecting the program core at runtime, this constant folding one of the few ways to obtain the value _a priori_ without having access to the correct symbol in code. Note that so far we have not persuaded any compiler to actually fold two string constants and encounter this issue.
+We strongly recommend this value should be printable and make sense in the context of inspecting system state from logs, messages, cores etc.
 
-As such, a constant of this type can be used as an _identity_ concept, whose values can be passed through opaquely from any callee to any caller. Caller and callee can be separated by any number of layers of calls and yet the return values can be passed transparently back to a caller, allowing for less mandatory handling, resulting in less effort and less opportunity for erroneous handling. 
+Interestingly, a brief search for prior art in this area reveals no prior proposals, though we'd love to hear of any we have overlooked (TODO(PMM) compiler authors ROFL?). The value is of course unique in the process, being a pointer. Note that it is implementation defined whether identical char[] constants could be folded into one pointer [c++ std lex.string para 13]. In fact, barring inspecting the program core at runtime, or having higher order knowledge of the declaration of symbols, this constant folding one of the few ways to obtain the value _a priori_ without having access to the correct symbol in code. Note that so far we have not persuaded any compiler to actually fold two string constants and encounter this issue.
 
+As such, we contend that a constant of this type can be used as an _identity_ concept, whose values can be passed through opaquely from any callee to any caller. Caller and callee can be separated by any number of layers of calls and yet the return values can be passed transparently back to a caller, allowing for less mandatory handling, resulting in less effort and less opportunity for inappropriate handling. 
 
 ### Code sample: defining an _error_id_
 
@@ -106,10 +61,11 @@ _error_id_  desirable properties
 
 An _error_id_  has a number of good properties, in addition to being a familiar type to all C/c++ programmers.
 
-* it is a built in type - and has the correct sense: the comparison ```if (error)``` will test for presence of an error condition.
+* it is a built in type _in C and c++_ - and has the expected semantics: the comparison ```if (error)``` will test for presence of an error condition.
 * Safe for concurrent access
-* Globally registered, the linker handles it [standard section, dynamic loading etc.] [If patching your binary is your thing, then enjoy, but please aware what implications that process had]
-* Yet if the content is a printable string constant, (which we strongly recommend) then inherently it supports printing for logging purposes and can be read for debugging.
+* exception free 
+* Globally registered, the linker handles it [standard section, dynamic loading etc.] [If patching your binary is your thing, then enjoy, but please aware what implications that process has]
+* If the content is a printable string constant, (which we strongly recommend) then inherently it supports printing for logging purposes and can be read for debugging.
 
 error_id usage examples - "C style"
 -------------------------------------
@@ -272,7 +228,7 @@ Having a unified set of identities allows callees to throw an exception, relying
 
 TODO(PMM) - think about possible template instantiation concerns.
 
-There is one responsibility that is granted along with the benefit of universality: since everyone could receive an error code, there may be a need to approach declaring _errode_code_ instances to some corporate standard of consistency. This may well mandate some kind of scheme perhaps based upon library, component, etc. to generate standard formats and ensure unique values.
+There is one responsibility that is granted along with the benefit of universality: since everyone could receive an error code, there may be a need to approach declaring _error_id_ instances to some corporate standard of consistency. This may well mandate some kind of scheme perhaps based upon library, component, etc. to generate standard formats and ensure unique values.
 
 Code Sample: simple example for generating "standard" _error_id_ value.    
 ```
@@ -358,12 +314,12 @@ No solution is perfect, and this is no exception, so in the spirit of allowing p
 
 * The strings cannot be translated 
   - firstly, _error_id_ is a point to a const array: dynamic translation into user readable string can only be done by mapping. It need not even be printable, for example. 
-  - additionally it must be remembered they although designed to be useful for diagnostics and debugging, these strings should never be treated as trusted output and rendered to systme users. This is because by design an  _error_id_ travels as an opaque value, and hence there is no rigorous mechanism preventing the security design flaw of rendering inputs of unknown provenance directly to an end user. 
+  - additionally it must be remembered they although designed to be useful for diagnostics and debugging, these strings should never be treated as trusted output and displayed to system end users. This is because by design an  _error_id_ travels as an opaque value, and hence there is no rigorous mechanism preventing the security design flaw of rendering inputs of unknown provenance directly to an end user. 
 
 Wrap up
 -------
 
-In summary, once the perhaps slightly odd feeling of using  _error_id_ fades, we hope it is a technique that people will adopt in composing larger systems when the error handling strategy is being designed. This approach will allow C and c++ libraries to become first class citizens in a design where error handling need never be left chance.
+In summary, once the perhaps slightly odd feeling of using  _error_id_ fades, we hope it is a technique that people will adopt in composing larger systems when the error handling strategy is being designed. The process wide identity concept allows for composition of large-scale applications comprising many components, while affording the ooportunity of an exception-like error handling with or _without_  employing actual exceptions, and maintaining a high level of debuggability. This approach will allow both C and c++ libraries to become first class citizens in a design where error handling need never be left to chance or assumption.
 
 Curate's Eggs
 -------------
