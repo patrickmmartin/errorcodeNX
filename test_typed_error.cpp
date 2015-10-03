@@ -5,14 +5,13 @@
  *      Author: Patrick
  */
 
-#include "errorcode.hpp"
-
 #include <iostream>
 #include <sstream>
 #include <stdio.h>
 #include <cstring>
 
 #include "catch/catch.hpp"
+#include "error_id.hpp"
 
 #include "LibA.h"
 

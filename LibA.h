@@ -10,7 +10,7 @@
 
 #include <stddef.h>
 
-#include "errorcode.hpp"
+#include "error_id.hpp"
 
 class LibA {
 

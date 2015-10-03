@@ -7,7 +7,7 @@
 
 #include "LibA.h"
 
-#include "errorcode.hpp"
+#include "error_id.hpp"
 
 const char LibA::EFOO[] = SCOPE_ERROR("GRP", "FOO", "Foo clobbered BAR on use");
 const char LibA::EBAR[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");

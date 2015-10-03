@@ -1,12 +1,12 @@
 /*
- * errorcode.hpp
+ * error_id.hpp
  *
  *  Created on: 26 Aug 2015
  *      Author: Patrick
  */
 
-#ifndef ERRORCODE_HPP_
-#define ERRORCODE_HPP_
+#ifndef ERROR_ID_HPP_
+#define ERROR_ID_HPP_
 
 #include <string>
 #include <iostream>
@@ -58,4 +58,4 @@ private:
   std::string *_what;
 };
 
-#endif /* ERRORCODE_HPP_ */
+#endif /* ERROR_ID_HPP_ */
