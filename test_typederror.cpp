@@ -177,7 +177,7 @@ static bool dispatch_foo_called = false;
 
 template <error_id errtype> class ErrorDispatcher {
 private:
-  error_id _errtype;
+  error_value _errtype;
   void dispatchError() { dispatch_default_called = true; };
 
 public:
@@ -325,7 +325,7 @@ TEST_CASE("demonstrate error typelist handlers with fallthrough pass",
   CheckList<ErrorsXY>()(FooErrors::EPOR);
 
   // exercising with variables
-  error_id K = FooErrors::EFOO;
+  error_value K = FooErrors::EFOO;
   CheckList<ErrorsXY>()(K);
   CHECK((switch_foo_called == true));
 
@@ -353,7 +353,7 @@ TEST_CASE("demonstrate typelist handlers with fallthrough fail",
       ErrorsXYOnly;
 
   // exercising with variables
-  error_id K = FooErrors::EFOO;
+  error_value K = FooErrors::EFOO;
 
   // exercising with variables
   K = FooErrors::EFOO;

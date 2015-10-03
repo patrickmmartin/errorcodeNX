@@ -13,7 +13,7 @@ const char LibA::EFOO[] = SCOPE_ERROR("GRP", "FOO", "Foo clobbered BAR on use");
 const char LibA::EBAR[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
 const char LibA::EPOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
 
-error_id LibA::return_me(int input) {
+error_value LibA::return_me(int input) {
   switch (input) {
   case 0:
     return LibA::EFOO;

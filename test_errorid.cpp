@@ -86,7 +86,7 @@ TEST_CASE("check values write correctly", "[errorcode]") {
 
   char buf[1024] = {0};
 
-  error_id raw_foo = NULL;
+  error_value raw_foo = NULL;
 
   INFO("testing raw values");
   std::ostringstream ostr;
@@ -99,7 +99,6 @@ TEST_CASE("check values write correctly", "[errorcode]") {
   INFO(buf);
   std::string bufstr = buf;
   CHECK((bufstr == buf));
-
 
   raw_foo = FooErrors::EBAR;
   ostr.str(""); ostr.clear();
@@ -122,7 +121,7 @@ TEST_CASE("check returned values", "[errorcode]") {
 
   // the concept can be used directly for a basic unique error condition
   SECTION("testing raw values") {
-    error_id err;
+    error_value err;
     err = LibA::return_me(0);
     INFO(err);
     CHECK((err != FooErrors::EBAR));
