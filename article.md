@@ -16,7 +16,7 @@ Consider the case for an ```int``` return status, a library of functions that wi
 
 In c++, where an ```enum``` is used in otherwise similar way as far as the callee is concerned, it is even more problematic for the caller as handling these mismatching interfaces requires a switch statement, with the result of code bloat, risk of bugs in implementing mappings for new value and risk of bugs from omitted handling of new return codes introduced into callee libraries.
 
-### Code Sample: A c++ wrapper that calls another library
+### Code Sample: A c++ wrapper that calls another two libraries
 
 ```
 lib_one_err_t func1;
@@ -70,9 +70,13 @@ error_id type proposal
 
 The proposed type for _error_id_ is fundamentally this:
 
-`typedef const char *error_id`.
+`typedef const char * const error_id`.
 
-Interestingly, a search for prior art in this area reveals no prior suggestions, though we'd love to hear of any we have overlooked TODO(PMM) compiler authors ROFL?. The value is of course unique in the process, being a pointer. Note that it is implementation defined whether identical char[] constants could be folded into one pointer [c++ std lex.string para 13]. In fact, barring inspecting the program core at runtime, this constant folding one of the few ways to obtain the value _a priori_ without having access to the correct symbol in code. Note that so far we have not persuaded any compiler to actually fold two string constants and encounter this issue.
+and specifically the latter is the _rvalue_ whereas the _lvalue_ is of course
+
+`typedef const char * error_value`.
+
+Interestingly, a brief search for prior art in this area reveals no prior proposals, though we'd love to hear of any we have overlooked TODO(PMM) compiler authors ROFL?. The value is of course unique in the process, being a pointer. Note that it is implementation defined whether identical char[] constants could be folded into one pointer [c++ std lex.string para 13]. In fact, barring inspecting the program core at runtime, this constant folding one of the few ways to obtain the value _a priori_ without having access to the correct symbol in code. Note that so far we have not persuaded any compiler to actually fold two string constants and encounter this issue.
 
 As such, a constant of this type can be used as an _identity_ concept, whose values can be passed through opaquely from any callee to any caller. Caller and callee can be separated by any number of layers of calls and yet the return values can be passed transparently back to a caller, allowing for less mandatory handling, resulting in less effort and less opportunity for erroneous handling. 
 
@@ -121,7 +125,7 @@ As a consequence of these good properties, we can see the following styles are a
 ### Code Sample: manual error handling (Mozilla style)
 
 ```
-error_id ret;
+error_value ret;
  
 ret = in();
 if (ret)
@@ -157,7 +161,7 @@ order_popcorn();
 ### Code Sample: error conditions can be composed dynamically
 
 ```
-error_id ret;
+error_value ret;
 for (test_step : test_steps)
 {
     ret = test_step(args);
@@ -297,7 +301,7 @@ No Existential Forgery of _error_id_
 So, what do is conveyed by "existential forgery"?
 There are two types
 The first is caused innocently enough by interfacing c++ client code a C style API which defins an enum for the return status type from an interface. This *forces* us to make a mapping some status and another - clearly this is a good place for incorrect logic to creep in, on the basis on the nature of the code. 
-The second is caused by the problem that integral types are a built in type and have values that can be defined. Hence an undocumented integral API return value from a library can be "handled" by simply performing action for that value, trusting that value. This is by definition not a proven approach. It can also be time consuming to find this kind of problem in a large code base for a specific library as the cognitive load is extremely high. The integral values essentially cannot be made private.
+The second is caused by the problem that integral types are a built in type and have values that can be defined by anyone. Hence an undocumented integral API return value from a library can be "handled" by simply performing action for that value, trusting that value. This is by definition not a proven approach. It can also be time consuming to find this kind of problem in a large code base for a specific library as the cognitive load is extremely high. The integral values essentially cannot be made private.
 
 ```
 case 42:
