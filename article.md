@@ -164,6 +164,8 @@ for (test_step : test_steps)
         log << "raised error [" << ret << "] in test step " << test_step;
         return error_id;
     }
+    // or we might run all, or more and produce a nicely formatted table
+    
 }
 ```
  
@@ -334,7 +336,10 @@ catch (...)
 What _error_id_ cannot do
 -------------------------
 
-No solution is perfect, and this is no exception, so in the spirit of allowing people to choose for themselves, let us list the main concerns one would come up with and address them:
+No solution is perfect, and this is no exception, so in the spirit of allowing people to choose for themselves, let us attempt to list some of common concerns one would come up with and address them:
+
+* defence against abuse
+  - in a process that contains C and c++, there is always the possibilty of casting or pointer arithmetic; while not proof against such abuse the intent is that for a code base where such techniques are minimised, using _error_id_ will facilitate the writing of simple and effective code for communicating error / status codes.
 
 * There is no stable value between processes / builds
     - this is unavoidable and the solution stops working at the boundary of the process - marshalling status codes between different processes, binaries and even different aged builds of the same code cannot rely upon the address. This is a job for some marshalling scheme layered on top of an existing status code system.
@@ -351,13 +356,28 @@ No solution is perfect, and this is no exception, so in the spirit of allowing p
 
 * The exception to the above statement, which is a problem shared with the integral values approach, is the classic ```FILE_NOT_FOUND```, ```TABLE OR VIEW MISSING``` return statues, where the next question is "but which?!". These are an ever-present and non-trivial source of frustration. If it is useful to attach that parameter, then it seems reasonable that the consumer will need to request a ```pair<error_id, more_info>```, use out parameters or devise some other scheme to compose the required data.
 
-* The strings cannot be translated dynamically
-  - This is simply answered by observing they should not be translated, or displayed. This is because by design an  _error_id_ can be passed around as an opaque value, and hence in principle there is no mechanism to prevent the error in a secure system  of rendering unvalidated inputs directly to an end user. Instead in general the system should determine should be shown to whatever the end user, and perform that translation at that point.
+* The strings cannot be translated 
+  - firstly, _error_id_ is a point to a const array: dynamic translation into user readable string can only be done by mapping. It need not even be printable, for example. 
+  - additionally it must be remembered they although designed to be useful for diagnostics and debugging, these strings should never be treated as trusted output and rendered to systme users. This is because by design an  _error_id_ travels as an opaque value, and hence there is no rigorous mechanism preventing the security design flaw of rendering inputs of unknown provenance directly to an end user. 
 
 Wrap up
 -------
 
 In summary, once the perhaps slightly odd feeling of using  _error_id_ fades, we hope it is a technique that people will adopt in composing larger systems when the error handling strategy is being designed. This approach will allow C and c++ libraries to become first class citizens in a design where error handling need never be left chance.
+
+Curate's Eggs
+-------------
+
+There are yet some potentially interesting ramifications that fall out from error_id that have not been demonstrated, but which we'll touch upon here.
+
+* _missing switch_: it is possible to write templates that will
+    - allow statically typed handlers to be registered for a switch statement to ensure values are always handled, with various outcomes for a fall-through
+    - prevent compilation if handlers are not explicitly defined for _error_id_ instances 
+* _private values_: it is possible to define a  _typed_error_  with a value not visible to clients 
+   - maybe useful for reporting those "impossible error" conditions in a manner that can be consumed by the caller
+* _reserved values_: it is possible to expose an _error_id_ such that it can not be used to define a _typed_error_, yet the value can still be used
+
+
 
 ### References
 
