@@ -4,16 +4,16 @@ Defining and using a symbol analogue for error reporting in c++
 Problem statement
 --------
 
-High quality software requires a well defined and straightforward error handling strategy to allow a system to protect or check its invariants in the face of unexpected input or runtime state. There are many positions taken on how to achieve this see [Google 2015], [Bloomberg 2015] [Mozilla 2015] [Wikipedia 2015]. It seems clear that there is not yet a concensus on the issue.
-However, error handing is still everyone's responsibility and particularly so for applications coded in c++ and C. In this article we will make a proposal, which we'll call `error_id` which can be used an _identity_ concept (concept with a little "c") to ensure when a specific course of action is desired, the error state reported by an API can be unambiguously recognised at arbitrarily remote call sites. Note that Ruby's symbols [Ruby 2015] and Clojure's keywords [Clojure 2015] supply similar concepts supported at the language level.
+High quality software requires a well defined and straightforward error handling strategy to allow a system to protect or verify its invariants in the face of unexpected input or runtime state. There are many positions taken on how to achieve this see [Google 2015], [Bloomberg 2015] [Mozilla 2015] [Wikipedia 2015]. It seems clear that there is not yet a concensus on the issue.
+Nevertheless, error handing is everyone's responsibility and particularly so for applications coded in c++ and C. In this article we will make a proposal, which we'll call `error_id` which can be used an _identity_ concept (concept with a little "c") to ensure when a specific course of action is desired, the error state reported by an API can be unambiguously recognised at arbitrarily remote call sites. Note that Ruby's symbols [Ruby 2015] and Clojure's keywords [Clojure 2015] supply similar concepts supported at the language level.
 
 Review of c++ and C approaches
 ------------------------------
 
-A very common style for reporting from functions in C/c++ is using ```enum``` or ```int``` values to enumerate all possible reported statuses and returning these values from library calls. An extension of this approach is to encode a value and some additional category info into an integral value, forming a system of return statuses like HRESULT [Wikipedia 2015]. However these different set of independent ```enum``` and ```int``` return values cause significant issues when interfaces must be composed that themselves must define new return statuses. HRESULT-style status values do not have this issue, but a given system must have all possible error return statuses registered, so that they can be reported and handled consistently. This scales poorly to larger software system. Note that in COM HRESULTS can in principle be the outcome of IPC calls, thus extending other universes of HRESULT values.
+A very common style for reporting from functions in C/c++ is using ```enum``` or ```int``` values to enumerate all possible reported statuses and returning these values from library calls. An extension of this approach is to encode a value and some additional category info into an integral value, forming a system of return statuses like HRESULT [Wikipedia 2015]. However these different set of independent ```enum``` and ```int``` return values cause significant issues from the mapping of these independent sets when interfaces must be composed into new interfaces that themselves must define new return statuses. HRESULT-style status values do not have this issue, but a given system must have all possible error return statuses registered, so that they can be reported and handled consistently. This scales poorly to larger software system. Note that in COM/DCOM HRESULTS can be the outcome of IPC calls, thus extending into other universes of HRESULT values.
 It is possible to define even more complex error handling schemes, such as registering callbacks or having an explicit error stack. And finally, global or thread-local system library variables for an `errno` style approach are of course available, with the usual basket of caveats.
 
-Fundamentally, when library boundaries are crossed the net outcome is that without access to a shared _identity_ type whose value describes the status the solutions all tends towards the familiar "a non zero return result indicates an error", which is indeed sensibly enough the position of many error handling schemes employing return codes only. Schemes have been constructed to allow additional information relevant to that status to be extracted, but composing them can be difficult or verbose.
+Fundamentally, the problem when library boundaries are crossed is that without access to a shared _identity_ type whose value describes the status the solutions all tends towards the familiar "a non zero return result indicates an error", which is indeed sensibly enough the position of many error handling schemes employing return codes exclusively. Schemes have been constructed to allow additional information relevant to that status to be extracted, but composing them can be difficult or verbose.
 The concern is that a large amount of code becomes devoted to merely mapping values between the return code sets of various libraries, which has a number of critiques on how this will scale:
 * claiming to handle the return codes from dependency systems (and transitively via their dependencies) is a forward commitment, which may or not remain valid over time
 * the amount of code written / code paths will result in issues
@@ -24,7 +24,7 @@ error_id type proposal
 
 The proposed type for _error_id_ is fundamentally this: `typedef const char * const error_id` which is the _rvalue_ whereas the _lvalue_ is of course `typedef const char * error_value`.
 
-We strongly recommend this value should be printable and make sense in the context of inspecting system state from logs, messages, cores etc.
+We strongly recommend this value should be printable and make sense in the context of inspecting system state from logs, messages, cores etc. 
 
 Interestingly, a brief search for prior art in this area reveals no prior proposals, though we'd love to hear of any we have overlooked (TODO(PMM) compiler authors ROFL?). The value is of course unique in the process, being a pointer. Note that it is implementation defined whether identical char[] constants could be folded into one pointer [c++ std lex.string para 13]. In fact, barring inspecting the program core at runtime, or having higher order knowledge of the declaration of symbols, this constant folding one of the few ways to obtain the value _a priori_ without having access to the correct symbol in code. Note that so far we have not persuaded any compiler to actually fold two string constants and encounter this issue.
 
@@ -33,27 +33,34 @@ As such, we contend that a constant of this type can be used as an _identity_ co
 ### Code sample: defining an _error_id_
 
 ```
+// elsewhere, declared
 error_id foo;
-
 ...
-
-// elsewhere
-
+// elsewhere, defined
 const char foo[] = "My Foo Status";
 
+...
 
 // you can't do this (no existential forgery)
 
 error_id ret = get_an_error();
+/*
 if (ret == "My Foo Status") // does not compile with -Wall -Werror "comparison with string literal results in unspecified behaviour" 
 {
     ...
 }
+*/
 
-if (ret == foo) // this is how one must test for equality
+if (ret)
 {
-    ...
+   if (ret == MY_KNOWN_ERROR) // this is how to test
+   {
+     // for this interesting case, here we might need to do additional work for logging, notification and the life
+   }
+   mylogger <<  "api_call returned " ret << "/n";
+    
 }
+   return ret;  /// we can always do this with no loss of information
 ```
 
 _error_id_  desirable properties 
@@ -62,8 +69,9 @@ _error_id_  desirable properties
 An _error_id_  has a number of good properties, in addition to being a familiar type to all C/c++ programmers.
 
 * it is a built in type _in C and c++_ - and has the expected semantics: the comparison ```if (error)``` will test for presence of an error condition.
+* default use is efficient
 * Safe for concurrent access
-* exception free 
+* usage is exception free 
 * Globally registered, the linker handles it [standard section, dynamic loading etc.] [If patching your binary is your thing, then enjoy, but please aware what implications that process has]
 * If the content is a printable string constant, (which we strongly recommend) then inherently it supports printing for logging purposes and can be read for debugging.
 
@@ -120,7 +128,7 @@ for (test_step : test_steps)
         log << "raised error [" << ret << "] in test step " << test_step;
         return error_id;
     }
-    // or we might run all, or more and produce a nicely formatted table
+    // alternatively we might run all, or more and produce a nicely formatted table for debugging / monitoring
     
 }
 ```
@@ -135,6 +143,7 @@ Not everyone uses exceptions, and not everyone has used exceptions well; to be f
 * ```catch (const char * err)```
 * reliance upon `catch (...)```
 * reliance upon checking ```what()```
+* every exception is std::runtime_error
 
 However, making use of _error_id_ and inheriting from one of the standard exception types such that it has the same  identity semantics is useful for the same reasons. There are quite a few techniques one can explore in this direction, but to pick a good example: exception class templates specialised on _error_id_ are very apt:
 
@@ -237,32 +246,30 @@ Code Sample: simple example for generating "standard" _error_id_ value.
 // this can be used thus
 const char LibA::EPOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
 
-//which give us the string  "GRP-FOO: Foo not reparable"
+// which give us the string  "GRP-FOO: Foo not reparable"
 
 // Organisations can exploit other preprocessor features to ensure uniqueness
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 
-#define SCOPE_ERROR_UNIQUE(grp, pkg, error_str) __FILE__ ":" TOSTRING(__LINE__) " " grp "-" pkg ": " error_str " " __DATE__ " " __TIME__
-    
+#define SCOPE_ERROR_UNIQUE(grp, pkg, error_str) \
+    __FILE__ ":" TOSTRING(__LINE__) " " grp "-" pkg ": " error_str " " __DATE__ " " __TIME__
+
+// which give us a string like ../test_error_id.cpp:39 GRP-FOO: Foo not Bar Oct  4 2015 12:07:30
+
 ```
 
 No Existential Forgery of _error_id_
 --------------------------------------
 
-So, what do is conveyed by "existential forgery"?
-There are two types
-The first is caused innocently enough by interfacing c++ client code a C style API which defins an enum for the return status type from an interface. This *forces* us to make a mapping some status and another - clearly this is a good place for incorrect logic to creep in, on the basis on the nature of the code. 
-The second is caused by the problem that integral types are a built in type and have values that can be defined by anyone. Hence an undocumented integral API return value from a library can be "handled" by simply performing action for that value, trusting that value. This is by definition not a proven approach. It can also be time consuming to find this kind of problem in a large code base for a specific library as the cognitive load is extremely high. The integral values essentially cannot be made private.
+So, what do is meant by "existential forgery"? There are two types:
+* the first is caused innocently enough by interfacing c++ client code a C style API which defins an enum for the return status type from an interface. This *forces* us to make a mapping some status and another - clearly this is a good place for incorrect logic to creep in, on the basis on the nature of the code. 
+* the second is caused by the problems caused by a policy not undocumenting return values; integral values cannot be made an implementation detail and in large systems it is all too common for code to handle the return `-99` to appear when clients perceive a need to perform handling for that situation.
+This problem is addressed by _error_id_ in two different ways:
+ -  possibly most valuably, we can break out of the cycle because the moderate level of self-description in the string of the raw value should faciliate implementing a better approach as trivially the component, file and issue can be delivered
+ - additionally, _error_id_ values can be made internal or for public consumption, enforcing a consistent discipline using the language, again the string contents can back this up, but the clear contract supplied by the library can be "please feel free to interpret these error states, but any others must be handled using the "Internal Error" strategy 
+ - note also that exposing an _error_id_  is no longer a forward commitment, as prior values can be *removed* in new revisions of the interface, in addition t0 new ones being introduced
 
-```
-case 42:
-    // due to known issue, we need to handle this concurrency bug state
-    concurrency_action();
-    break;
-```    
-
-For _error_id_, making the same _faux pas_ this quite simply goes from hard SCOPED_ERROR(...) to (near) impossible SCOPED_ERROR_UNIQUE(...), even with full access to the machinery [ citation needed].
 
 Code Sample: Generation of identities and unique identities
 ```
