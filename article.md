@@ -1,14 +1,14 @@
 Defining and using a symbol analogue for error reporting in c++
-===============================================================
+====
 
 Problem statement
---------
+====
 
 High quality software requires a well defined and straightforward error handling strategy to allow a system to protect or verify its invariants in the face of unexpected input or runtime state. There are many positions taken on how to achieve this see [Google 2015], [Bloomberg 2015] [Mozilla 2015] [Wikipedia 2015]. It seems clear that there is not yet a concensus on the issue.
 Nevertheless, error handing is everyone's responsibility and particularly so for applications coded in c++ and C. In this article we will make a proposal, which we'll call `error_id` which can be used an _identity_ concept (concept with a little "c") to ensure when a specific course of action is desired, the error state reported by an API can be unambiguously recognised at arbitrarily remote call sites. Note that Ruby's symbols [Ruby 2015] and Clojure's keywords [Clojure 2015] supply similar concepts supported at the language level.
 
 Review of c++ and C approaches
-------------------------------
+====
 
 A very common style for reporting from functions in C/c++ is using ```enum``` or ```int``` values to enumerate all possible reported statuses and returning these values from library calls. An extension of this approach is to encode a value and some additional category info into an integral value, forming a system of return statuses like HRESULT [Wikipedia 2015]. However these different set of independent ```enum``` and ```int``` return values cause significant issues from the mapping of these independent sets when interfaces must be composed into new interfaces that themselves must define new return statuses. HRESULT-style status values do not have this issue, but a given system must have all possible error return statuses registered, so that they can be reported and handled consistently. This scales poorly to larger software system. Note that in COM/DCOM HRESULTS can be the outcome of IPC calls, thus extending into other universes of HRESULT values.
 It is possible to define even more complex error handling schemes, such as registering callbacks or having an explicit error stack. And finally, global or thread-local system library variables for an `errno` style approach are of course available, with the usual basket of caveats.
@@ -20,7 +20,7 @@ The concern is that a large amount of code becomes devoted to merely mapping val
 * the most prudent approach is to have a consistent "non-zero return code indicates an error" policy, which has the deficiency of requiring all library clients "opt into" the steps required to obtain more information on a failed operation
 
 error_id type proposal
-------------------------
+====
 
 The proposed type for _error_id_ is fundamentally this: `typedef const char * const error_id` which is the _rvalue_ whereas the _lvalue_ is of course `typedef const char * error_value`.
 
@@ -64,7 +64,7 @@ if (ret)
 ```
 
 _error_id_  desirable properties 
---------------------------------------------------
+====
 
 An _error_id_  has a number of good properties, in addition to being a familiar type to all C/c++ programmers.
 
@@ -76,7 +76,7 @@ An _error_id_  has a number of good properties, in addition to being a familiar 
 * If the content is a printable string constant, (which we strongly recommend) then inherently it supports printing for logging purposes and can be read for debugging.
 
 error_id usage examples - "C style"
--------------------------------------
+====
 
 As a consequence of these good properties, we can see the following styles are available.
 
@@ -324,9 +324,20 @@ No solution is perfect, and this is no exception, so in the spirit of allowing p
   - additionally it must be remembered they although designed to be useful for diagnostics and debugging, these strings should never be treated as trusted output and displayed to system end users. This is because by design an  _error_id_ travels as an opaque value, and hence there is no rigorous mechanism preventing the security design flaw of rendering inputs of unknown provenance directly to an end user. 
 
 Wrap up
--------
+=======
 
 In summary, once the perhaps slightly odd feeling of using  _error_id_ fades, we hope it is a technique that people will adopt in composing larger systems when the error handling strategy is being designed. The process wide identity concept allows for composition of large-scale applications comprising many components, while affording the ooportunity of an exception-like error handling with or _without_  employing actual exceptions, and maintaining a high level of debuggability. This approach will allow both C and c++ libraries to become first class citizens in a design where error handling need never be left to chance or assumption.
+
+Recommendations
+====
+
+* Define your identities
+TODO(PMM)
+* Define how you wish to expose them and distribute them
+TODO(PMM)
+* Make Use them
+TODO(PMM)
+
 
 Curate's Eggs
 -------------
