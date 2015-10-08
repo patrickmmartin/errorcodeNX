@@ -5,7 +5,7 @@ Problem statement
 ====
 
 High quality software requires a well defined and straightforward error handling strategy to allow a system to protect or verify its invariants in the face of unexpected input or runtime state. There are many positions taken on how to achieve this see [Google 2015], [Bloomberg 2015] [Mozilla 2015] [Wikipedia 2015]. It seems clear that there is not yet a concensus on the issue.
-Nevertheless, error handing is everyone's responsibility and particularly so for applications coded in c++ and C. In this article we will make a proposal, which we'll call `error_id` which can be used an _identity_ concept (concept with a little "c") to ensure when a specific course of action is desired, the error state reported by an API can be unambiguously recognised at arbitrarily remote call sites. Note that Ruby's symbols [Ruby 2015] and Clojure's keywords [Clojure 2015] supply similar concepts supported at the language level.
+Nevertheless, error handing is everyone's responsibility and particularly so for applications coded in c++ and C. In this article we will make a proposal, which we'll call `error_id` which can be used an _identity_ concept (concept with a little "c") to ensure when a specific course of action is desired, the error state reported by an API can be unambiguously recognised at arbitrarily remote call sites.
 
 Review of c++ and C approaches
 ====
@@ -29,6 +29,8 @@ We strongly recommend this value should be printable and make sense in the conte
 Interestingly, a brief search for prior art in this area reveals no prior proposals, though we'd love to hear of any we have overlooked (TODO(PMM) compiler authors ROFL?). The value is of course unique in the process, being a pointer. Note that it is implementation defined whether identical char[] constants could be folded into one pointer [c++ std lex.string para 13]. In fact, barring inspecting the program core at runtime, or having higher order knowledge of the declaration of symbols, this constant folding one of the few ways to obtain the value _a priori_ without having access to the correct symbol in code. Note that so far we have not persuaded any compiler to actually fold two string constants and encounter this issue.
 
 As such, we contend that a constant of this type can be used as an _identity_ concept, whose values can be passed through opaquely from any callee to any caller. Caller and callee can be separated by any number of layers of calls and yet the return values can be passed transparently back to a caller, allowing for less mandatory handling, resulting in less effort and less opportunity for inappropriate handling. 
+
+To compare with prior art in this area: note that Ruby's symbols [Ruby 2015] and Clojure's keywords [Clojure 2015] supply similar concepts supported at the language level.
 
 ### Code sample: defining an _error_id_
 
