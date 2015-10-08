@@ -331,24 +331,21 @@ In summary, once the perhaps slightly odd feeling of using  _error_id_ fades, we
 Recommendations
 ====
 
-* Define your identities
-TODO(PMM)
-* Define how you wish to expose them and distribute them
-TODO(PMM)
-* Make Use them
-TODO(PMM)
-
+* Define your identities for system states
+* Define how you wish to expose these identities and distribute them. For example, component level, subsystem level, applciation wide?
+* Use them rigourously
 
 Curate's Eggs
 -------------
 
 There are yet some potentially interesting ramifications that fall out from error_id that have not been demonstrated, but which we'll touch upon here.
 
-* _missing switch_: it is possible to write templates that will
-    - allow statically typed handlers to be registered for a switch statement to ensure values are always handled, with various outcomes for a fall-through
-    - prevent compilation if handlers are not explicitly defined for _error_id_ instances 
-* _private values_: it is possible to define a  _typed_error_  with a value not visible to clients 
-   - maybe useful for reporting those "impossible error" conditions in a manner that can be consumed by the caller
+* _missing switch_: it is possible to write template metaprograms that will
+    - allow statically typed handlers to be registered for a switch statement to ensure values are always handled, with various outcomes for a fall-through, (Fail, Pass, etc.)
+    - even prevent compilation if handlers are not located for specific  _error_id_ instances 
+* _private values_: it is possible to define an _error_id_   _typed_error_  with a value not visible to clients 
+   - for _typed error_ this would allows a standard abort via exception for reporting those error conditions not understood explicitly by callers
+   - for _error id_ this can allow a hierarchy of error conditions to be defined
 * _reserved values_: it is possible to expose an _error_id_ such that it can not be used to define a _typed_error_, yet the value can still be used
 
 
