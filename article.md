@@ -4,7 +4,7 @@ Defining and using a symbol analogue for error reporting in c++
 Problem statement
 ====
 
-High quality software requires a well defined and straightforward error handling strategy to allow a system to protect or verify its invariants in the face of unexpected input or runtime state. There are many positions taken on how to achieve this see [Google 2015], [Bloomberg 2015] [Mozilla 2015] [Wikipedia 2015]. It seems clear that there is not yet a concensus on the issue.
+High quality software requires a well defined and straightforward error handling strategy to allow a system to protect or verify its invariants in the face of invalid input or runtime state. There are many positions taken on how to achieve this see [Google 2015], [Bloomberg 2015] [Mozilla 2015] [Wikipedia 2015]. It seems clear that there is not yet a concensus on the issue.
 Nevertheless, error handing is everyone's responsibility and particularly so for applications coded in c++ and C. In this article we will make a proposal, which we'll call `error_id` which can be used an _identity_ concept (concept with a little "c") to ensure when a specific course of action is desired, the error state reported by an API can be unambiguously recognised at arbitrarily remote call sites.
 
 Review of c++ and C approaches
@@ -26,9 +26,9 @@ The proposed type for _error_id_ is fundamentally this: `typedef const char * co
 
 We strongly recommend this value should be printable and make sense in the context of inspecting system state from logs, messages, cores etc. 
 
-Interestingly, a brief search for prior art in this area reveals no prior proposals, though we'd love to hear of any we have overlooked (TODO(PMM) compiler authors ROFL?). The value is of course unique in the process, being a pointer. Note that it is implementation defined whether identical char[] constants could be folded into one pointer [c++ std lex.string para 13]. In fact, barring inspecting the program core at runtime, or having higher order knowledge of the declaration of symbols, this constant folding one of the few ways to obtain the value _a priori_ without having access to the correct symbol in code. Note that so far we have not persuaded any compiler to actually fold two string constants and encounter this issue.
+Interestingly, a brief search for prior art in this area reveals no prior proposals, though we'd love to hear of any we have overlooked (TODO(PMM) compiler authors ROFL?). The value is of course unique in the process, being a pointer, solving the problem of registration. Note that it is implementation defined whether identical char[] constants could be folded into one pointer [c++ std lex.string para 13]. In fact, barring inspecting the program core at runtime, or having higher order knowledge of the declaration of symbols, this constant folding one of the few ways to obtain the value _a priori_ without having access to the correct symbol in code. Note that so far we have not persuaded any compiler to actually fold two string constants and encounter this issue.
 
-As such, we contend that a constant of this type can be used as an _identity_ concept, whose values can be passed through opaquely from any callee to any caller. Caller and callee can be separated by any number of layers of calls and yet the return values can be passed transparently back to a caller, allowing for less mandatory handling, resulting in less effort and less opportunity for inappropriate handling. 
+As such, we contend that a constant of this type can be used as an _identity_ concept, whose values can be passed through opaquely from any callee to any caller. Caller and callee can be separated by any number of layers of calls and yet the return values can be passed transparently back to a caller, allowing for the amount of mandatory code to be slashed, resulting in less effort and less opportunity for inappropriate handling. 
 
 To compare with prior art in this area: note that Ruby's symbols [Ruby 2015] and Clojure's keywords [Clojure 2015] supply similar concepts supported at the language level.
 
@@ -47,7 +47,8 @@ const char foo[] = "My Foo Status";
 
 error_id ret = get_an_error();
 /*
-if (ret == "My Foo Status") // does not compile with -Wall -Werror "comparison with string literal results in unspecified behaviour" 
+if (ret == "My Foo Status") // does not compile with -Wall -Werror
+                            //"comparison with string literal results in unspecified behaviour" 
 {
     ...
 }
@@ -57,12 +58,13 @@ if (ret)
 {
    if (ret == MY_KNOWN_ERROR) // this is how to test
    {
-     // for this interesting case, here we might need to do additional work for logging, notification and the life
+     // for this interesting case, here we might need to do additional work
+     // for logging, notification and the life
    }
    mylogger <<  "api_call returned " ret << "/n";
     
 }
-   return ret;  /// we can always do this with no loss of information
+return ret;  /// we can always do this with no loss of information
 ```
 
 _error_id_  desirable properties 
@@ -130,7 +132,8 @@ for (test_step : test_steps)
         log << "raised error [" << ret << "] in test step " << test_step;
         return error_id;
     }
-    // alternatively we might run all, or more and produce a nicely formatted table for debugging / monitoring
+    // alternatively we might run all,
+    // or more and produce a nicely formatted table for debugging / monitoring
     
 }
 ```
@@ -138,7 +141,7 @@ for (test_step : test_steps)
 Use of _error_id_ with exception based error handling
 ------------------------------------------------------
 
-So far, all the previous code examples would have worked equally well _error_id_ were an integral type, however the identity of an _error_id_ is exploitable to provide good answers to a number of issues that can arise with deciding to use exceptions and also maintains the good properties of exception handling.
+So far, all the previous code examples would have worked almost as well if _error_id_ were an integral type, however the identity of an _error_id_ is exploitable to provide good answers to a number of issues that can arise with deciding to use exceptions and also maintains the good properties of exception handling.
 
 Not everyone uses exceptions, and not everyone has used exceptions well; to be fair there has been a history of dubious prior art in this area. All the following are real world examples of code that went to production, or can be found in patent submissions, etc. The names of the guilty parties have been removed while we await the expiry of any relevant statutes.
 * ```throw 99```
@@ -147,10 +150,10 @@ Not everyone uses exceptions, and not everyone has used exceptions well; to be f
 * reliance upon checking ```what()```
 * every exception is std::runtime_error
 
-However, making use of _error_id_ and inheriting from one of the standard exception types such that it has the same  identity semantics is useful for the same reasons. There are quite a few techniques one can explore in this direction, but to pick a good example: exception class templates specialised on _error_id_ are very apt:
+However, making use of _error_id_ and inheriting from one of the standard exception types such that it has the same identity semantics is useful for the same reasons as for the using the raw value. As an example: exception class templates specialised on _error_id_ are very apt:
 
 ### Code Sample: exception template allowing exceptions with _identity_
-
+  
     // we can define a simple template parameterised upon the error_id value
     // this template stores the base type and optionally some additional info if user specified
     // Note that a large chunk of the code is book keeping to keep the instance's data requirement to a minimum
@@ -214,7 +217,7 @@ However, making use of _error_id_ and inheriting from one of the standard except
     }
 ```
 
-This approach has some rather neat properties: we can avoid "false matches" caused by code handling caused exception types over eagerly. The parameter has to be an _error_id_, not a string literal.
+This approach has some rather neat properties: we can avoid "false matches" caused by code handling exception types too greedily. The parameter has to be an _error_id_, not a string literal.
 Having a unified set of identities allows callees to throw an exception, relying upon callers higher in the stack to make the decision on how to handle that status, and avoiding the need re-throw the exception. Even if re-thrown - if the same _error_id_ is used, the _identity_ is of course preserved even if the stack at the point of re-throw is different from the originating thrower.
 
 ### Code Sample: exception handling with fall-through
@@ -270,10 +273,10 @@ So, what do is meant by "existential forgery"? There are two types:
 This problem is addressed by _error_id_ in two different ways:
  -  possibly most valuably, we can break out of the cycle because the moderate level of self-description in the string of the raw value should faciliate implementing a better approach as trivially the component, file and issue can be delivered
  - additionally, _error_id_ values can be made internal or for public consumption, enforcing a consistent discipline using the language, again the string contents can back this up, but the clear contract supplied by the library can be "please feel free to interpret these error states, but any others must be handled using the "Internal Error" strategy 
- - note also that exposing an _error_id_  is no longer a forward commitment, as prior values can be *removed* in new revisions of the interface, in addition t0 new ones being introduced
+ - note also that exposing an _error_id_ is no longer a forward commitment, as prior values can be *removed* in new revisions of the interface, in addition to new ones being introduced. This is of course in constrast to integral values return codes.
 
 
-Code Sample: Generation of identities and unique identities
+### Code Sample: Generation of identities and unique identities
 ```
 const char N::new_bar[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
  
@@ -316,14 +319,14 @@ No solution is perfect, and this is no exception, so in the spirit of allowing p
     
 * Can't return additional info 
   - this is by design as we assume most use cases do not make sense for a pure _error_id_ identity,
-  - let us also pause, as this is where the python guys start laughing
+  - let us also pause, as this is where the python guys start laughing of course
       ```(info, error) = attempt_the_thing()``` there will be a suitable analoguous approach in c++
 
 * The exception to the above statement, which is a problem shared with the integral values approach, is the classic ```FILE_NOT_FOUND```, ```TABLE OR VIEW MISSING``` return statues, where the next question is "but which?!". These are an ever-present and non-trivial source of frustration. If it is useful to attach that parameter, then it seems reasonable that the consumer will need to request a ```pair<error_id, more_info>```, use out parameters or devise some other scheme to compose the required data.
 
 * The strings cannot be translated 
-  - firstly, _error_id_ is a point to a const array: dynamic translation into user readable string can only be done by mapping. It need not even be printable, for example. 
-  - additionally it must be remembered they although designed to be useful for diagnostics and debugging, these strings should never be treated as trusted output and displayed to system end users. This is because by design an  _error_id_ travels as an opaque value, and hence there is no rigorous mechanism preventing the security design flaw of rendering inputs of unknown provenance directly to an end user. 
+  - firstly, _error_id_ is a point to a const array of char: dynamic translation into user readable string can only be done by mapping. It need not even be printable, for example. 
+  - additionally it must be remembered they although designed to be useful for diagnostics and debugging, these strings should never be treated as trusted output and displayed to system end users. This is because by design an  _error_id_ travels as an opaque value, and hence there is no rigorous mechanism preventing the secure design error of rendering inputs of unknown origin directly to an end user. 
 
 Wrap up
 =======
@@ -349,7 +352,6 @@ There are yet some potentially interesting ramifications that fall out from erro
    - for _typed error_ this would allows a standard abort via exception for reporting those error conditions not understood explicitly by callers
    - for _error id_ this can allow a hierarchy of error conditions to be defined
 * _reserved values_: it is possible to expose an _error_id_ such that it can not be used to define a _typed_error_, yet the value can still be used
-
 
 
 ### References
