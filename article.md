@@ -266,7 +266,7 @@ No Existential Forgery of _error_id_
 
 So, what do is meant by "existential forgery"? There are two types:
 * the first is caused innocently enough by interfacing c++ client code a C style API which defins an enum for the return status type from an interface. This *forces* us to make a mapping some status and another - clearly this is a good place for incorrect logic to creep in, on the basis on the nature of the code. 
-* the second is caused by the problems caused by a policy not undocumenting return values; integral values cannot be made an implementation detail and in large systems it is all too common for code to handle the return `-99` to appear when clients perceive a need to perform handling for that situation.
+* the second is caused by the problems caused by a policy of not documenting return values; integral values cannot be made an implementation detail and in large systems it is all too common for code to handle the return `-99` to appear when clients perceive a need to perform handling for that situation.
 This problem is addressed by _error_id_ in two different ways:
  -  possibly most valuably, we can break out of the cycle because the moderate level of self-description in the string of the raw value should faciliate implementing a better approach as trivially the component, file and issue can be delivered
  - additionally, _error_id_ values can be made internal or for public consumption, enforcing a consistent discipline using the language, again the string contents can back this up, but the clear contract supplied by the library can be "please feel free to interpret these error states, but any others must be handled using the "Internal Error" strategy 
