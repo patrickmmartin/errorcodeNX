@@ -97,18 +97,18 @@ TEST_CASE("constructing wrapper for error", "[exceptions]") {
 
   SECTION("testing no-args construction") {
     INFO("testing comparison for wrapped values");
-    CHECK((err_blank.type() == FooErrors::EFOO));
-    CHECK((err_blank.type() != FooErrors::EBAR));
+    CHECK(err_blank.type() == FooErrors::EFOO);
+    CHECK(err_blank.type() != FooErrors::EBAR);
     INFO(err_blank.what());
-    CHECK((strcmp(err_blank.what(), FooErrors::EFOO) == 0));
+    CHECK(0 == strcmp(err_blank.what(), FooErrors::EFOO));
   }
 
   SECTION("testing construction with additional string") {
     INFO("testing wrapped values");
-    CHECK((err.type() == FooErrors::EFOO));
-    CHECK((err.type() != FooErrors::EBAR));
+    CHECK(err.type() == FooErrors::EFOO);
+    CHECK(err.type() != FooErrors::EBAR);
     INFO(err.what());
-    CHECK((err.what() == std::string(FooErrors::EFOO) + ". " + msg));
+    CHECK(0 == strcmp(err.what(), msg));
   }
 }
 
@@ -119,8 +119,8 @@ TEST_CASE("access wrapper member for error_id", "[exceptions]") {
   foo_err err("foo is not a bar - thirst ensues");
 
   INFO("testing comparison wrapped values");
-  CHECK((err.type() == FooErrors::EFOO));
-  CHECK((err.type() != FooErrors::EBAR));
+  CHECK(err.type() == FooErrors::EFOO);
+  CHECK(err.type() != FooErrors::EBAR);
 }
 
 TEST_CASE("access wrapper operator for error overload", "[exceptions]") {
@@ -129,8 +129,8 @@ TEST_CASE("access wrapper operator for error overload", "[exceptions]") {
   // payload
   foo_err err("foo is not a bar - thirst ensues");
 
-  CHECK((err == FooErrors::EFOO));
-  CHECK((err != FooErrors::EBAR));
+  CHECK(err == FooErrors::EFOO);
+  CHECK(err != FooErrors::EBAR);
 }
 
 TEST_CASE("ensure throwing exception instances works", "[exceptions]") {
@@ -173,7 +173,7 @@ TEST_CASE("ensure throwing exception instances works", "[exceptions]") {
 
   SECTION("existential forgery of typed_error is not possible") {
     try {
-      CHECK((N::new_bar != FooErrors::EBAR));
+      CHECK(N::new_bar != FooErrors::EBAR);
       throw typed_error<N::new_bar>("bazong not convertible to bar");
     } catch (typed_error<N::new_bar> &e) {
       INFO("in std::exception handler");

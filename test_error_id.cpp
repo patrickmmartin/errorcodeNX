@@ -43,18 +43,18 @@ TEST_CASE("check macro works", "[errorcode]") {
 
   INFO(N::new_bar);
   INFO("equality of error strings generated the same way is possible");
-  CHECK((strcmp(N::new_bar, FooErrors::EBAR) == 0));
+  CHECK(strcmp(N::new_bar, FooErrors::EBAR) == 0);
   INFO("verify the output of the macro");
-  CHECK((strcmp(N::new_bar, "GRP"
+  CHECK(strcmp(N::new_bar, "GRP"
                             "-"
                             "FOO"
                             ": "
-                            "Foo not Bar") == 0));
+                            "Foo not Bar") == 0);
 
   INFO(N::new_bar);
-  CHECK((N::new_bar != FooErrors::EBAR));
+  CHECK(N::new_bar != FooErrors::EBAR);
   INFO(N::new_foo2);
-  CHECK((N::new_foo != N::new_foo2));
+  CHECK(N::new_foo != N::new_foo2);
 }
 
 TEST_CASE("access values directly", "[errorcode]") {
@@ -63,8 +63,8 @@ TEST_CASE("access values directly", "[errorcode]") {
   error_id raw_foo = FooErrors::EBAR;
 
   INFO("testing raw values");
-  CHECK((raw_foo == FooErrors::EBAR));
-  CHECK((raw_foo != FooErrors::EFOO));
+  CHECK(raw_foo == FooErrors::EBAR);
+  CHECK(raw_foo != FooErrors::EFOO);
 }
 
 TEST_CASE("check values write correctly", "[errorcode]") {
@@ -78,24 +78,24 @@ TEST_CASE("check values write correctly", "[errorcode]") {
 
   ostr << raw_foo;
   INFO(ostr.str());
-  CHECK((ostr.str() == ""));
+  CHECK(ostr.str() == "");
 
   snprintf(buf, sizeof(buf), "%s", raw_foo);
   INFO(buf);
   std::string bufstr = buf;
-  CHECK((bufstr == buf));
+  CHECK(bufstr == buf);
 
   raw_foo = FooErrors::EBAR;
   ostr.str("");
   ostr.clear();
   ostr << raw_foo;
   INFO(ostr.str());
-  CHECK((ostr.str() == FooErrors::EBAR));
+  CHECK(ostr.str() == FooErrors::EBAR);
 
   snprintf(buf, sizeof(buf), "%s", raw_foo);
   bufstr = buf;
   INFO(bufstr);
-  CHECK((bufstr == std::string(FooErrors::EBAR)));
+  CHECK(bufstr == std::string(FooErrors::EBAR));
 }
 
 TEST_CASE("check returned values", "[errorcode]") {
@@ -105,19 +105,19 @@ TEST_CASE("check returned values", "[errorcode]") {
     error_value err;
     err = LibA::return_me(0);
     INFO(err);
-    CHECK((err != FooErrors::EBAR));
-    CHECK((err != FooErrors::EFOO));
-    CHECK((err == LibA::EFOO));
+    CHECK(err != FooErrors::EBAR);
+    CHECK(err != FooErrors::EFOO);
+    CHECK(err == LibA::EFOO);
 
     err = LibA::return_me(1);
     INFO(err);
-    CHECK((err != FooErrors::EBAR));
-    CHECK((err != FooErrors::EFOO));
-    CHECK((err == LibA::EBAR));
+    CHECK(err != FooErrors::EBAR);
+    CHECK(err != FooErrors::EFOO);
+    CHECK(err == LibA::EBAR);
 
     err = LibA::return_me(-1);
     INFO(err);
-    CHECK((err != FooErrors::EBAR));
-    CHECK((err != FooErrors::EFOO));
+    CHECK(err != FooErrors::EBAR);
+    CHECK(err != FooErrors::EFOO);
   }
 }

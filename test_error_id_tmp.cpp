@@ -165,14 +165,14 @@ TEST_CASE("demonstrate error typelist handlers with fallthrough pass",
   // exercising with variables
   error_value K = FooErrors::EFOO;
   CheckList<ErrorsXY>()(K);
-  CHECK((switch_foo_called == true));
+  CHECK(switch_foo_called == true);
 
   K = FooErrors::EBAR;
   CheckList<ErrorsXY>()(K);
 
   K = FooErrors::EPOR;
   CheckList<ErrorsXY>()(K);
-  CHECK((switch_default_pass_called == true));
+  CHECK(switch_default_pass_called == true);
 }
 
 TEST_CASE("demonstrate typelist handlers with fallthrough fail",
@@ -197,14 +197,14 @@ TEST_CASE("demonstrate typelist handlers with fallthrough fail",
   K = FooErrors::EFOO;
 
   CheckList<ErrorsXYOnly>()(K);
-  CHECK((switch_foo_called == true));
+  CHECK(switch_foo_called == true);
 
   K = FooErrors::EBAR;
   CheckList<ErrorsXYOnly>()(K);
 
   K = FooErrors::EPOR;
   CheckList<ErrorsXYOnly>()(K);
-  CHECK((switch_default_fail_called == true));
+  CHECK(switch_default_fail_called == true);
 
   // illustrates statically mandating handlers for specified error codes
   // this cannot compile without an implementation of ErrorHandler<FooErrors::Z>

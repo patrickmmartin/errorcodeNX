@@ -37,25 +37,23 @@ typedef const char *error_value;
 // this one has a base type and additional info
 template <error_id errtype> class typed_error : public std::exception {
 public:
-  typed_error(const char *what = NULL) : _what(NULL) {
-    if (what) {
-      _what = new std::string(errtype);
-      *_what += ". ";
-      *_what += what;
-    }
-  };
-  ~typed_error() throw() {
-    if (_what)
-      delete _what;
-  }
+  typed_error(const char * what = NULL) : _what(what) {  }
+
   virtual const char *what() const throw() {
-    return (_what) ? _what->c_str() : type();
+    return (_what) ? _what : type();
   }
   const char *type() const { return errtype; }
   operator const char *() { return errtype; }
 
 private:
-  std::string *_what;
+  error_id _what;
 };
+
+
+
+// we can define a simple template parameterised upon "value"
+template <error_id errtype> class typed_error_lite : public std::exception {};
+
+
 
 #endif /* ERROR_ID_HPP_ */
