@@ -154,32 +154,24 @@ However, making use of _error_id_ and inheriting from one of the standard except
 
 ### Code Sample: exception template allowing exceptions with _identity_
   
-    // we can define a simple template parameterised upon the error_id value
-    // this template stores the base type and optionally some additional info if user specified
-    // Note that a large chunk of the code is book keeping to keep the instance's data requirement to a minimum
-    template <error_id errtype> class typed_error : public std::runtime_exception {
-    public:
-      typed_error(const char *what = NULL) : _what(NULL) {
-        if (what) {
-          _what = new std::string(errtype);
-          *_what += ". ";
-          *_what += what;
-        }
-      };
-      ~typed_error() throw() {
-        if (_what)
-          delete _what;
-      }
-      virtual const char *what() const throw() {
-        return (_what) ? _what->c_str() : type();
-      }
-      const char *type() const { return errtype; }
-      operator const char *() { return errtype; }
-        
-    private:
-      std::string *_what;
-    };    
+```  
+// we can define a simple template parameterised upon the error_id value
+template <error_id errtype> class typed_error_lite : public std::exception {};
+    
+// or we can go a little further and allow for some additional information
+// this one has a base type and additional info
+template <error_id errtype> class typed_error : public std::exception {
+public:
+  typed_error(const char *what = NULL) : _what(what) {}
 
+  virtual const char *what() const throw() { return (_what) ? _what : type(); }
+  const char *type() const { return errtype; }
+  operator const char *() { return errtype; }
+
+private:
+  error_id _what;
+};
+```
 
 ### Code Sample: define and handle exceptions concisely based upon an _error_id_
 
@@ -306,27 +298,26 @@ What _error_id_ cannot do
 
 No solution is perfect, and this is no exception, so in the spirit of allowing people to choose for themselves, let us attempt to list some of common concerns one would come up with and address them:
 
-* defence against abuse
-  - in a process that contains C and c++, there is always the possibilty of casting or pointer arithmetic; while not proof against such abuse the intent is that for a code base where such techniques are minimised, using _error_id_ will facilitate the writing of simple and effective code for communicating error / status codes.
-
-* There is no stable value between processes / builds
-    - this is unavoidable and the solution stops working at the boundary of the process - marshalling status codes between different processes, binaries and even different aged builds of the same code cannot rely upon the address. This is a job for some marshalling scheme layered on top of an existing status code system.
-
-* No ```switch``` statement
+* be cases in ```switch``` statements
     - we do not see this as practically much of an issue as this only applies to code using raw _error_id_, and not exceptions and there are two main use cases:
     1. hand crafting the mapping between incompatible return statuses. For this we suggest it should not be necessary as _error_id_ values would ideally only need to be thrown/returned and consumed 
     2. finally reaching code responsible for handling a set of specific codes differently. In this case, chained ```if/else if``` blocks for integral types should suffice.
     
-* Can't return additional info 
-  - this is by design as we assume most use cases do not make sense for a pure _error_id_ identity,
-  - let us also pause, as this is where the python guys start laughing of course
-      ```(info, error) = attempt_the_thing()``` there will be a suitable analoguous approach in c++
+* return additional info 
+  - this is of course a natural consequence of using a pure _error_id_ as an identity
+  - exception classes similar to _typed_error_ of course allow as much context as one is prepared to pay for in one object instance, 
+  - if status need more context - conditions like "[file|table|foo] not found" being the most infuriating - then we have to leave it to the user to code up a solution to pass back more context
 
-* The exception to the above statement, which is a problem shared with the integral values approach, is the classic ```FILE_NOT_FOUND```, ```TABLE OR VIEW MISSING``` return statues, where the next question is "but which?!". These are an ever-present and non-trivial source of frustration. If it is useful to attach that parameter, then it seems reasonable that the consumer will need to request a ```pair<error_id, more_info>```, use out parameters or devise some other scheme to compose the required data.
+* defence against abuse
+  - in a C / c++ application, there is no way to completely prevent abuse such as _error_id_ values being appropriated and used inappropriately; the intent of the proposal is to illustrate the benefits arising from the simplicity and effectiveness of using _error_id_. We hope that the solution would be adopted widely upon its own merits.
+
+* yield stable values between processes / builds
+    - firstly, it should be remembered the value is not be inspected - only what it points to 
+    - secondly, this is unavoidable and the solution of course stops working at the boundary of the process - marshalling status codes between different processes, binaries and even different aged builds of the same code cannot rely upon the address. This is a job for some marshalling scheme layered on top of an existing status code system.
 
 * The strings cannot be translated 
-  - firstly, _error_id_ is a point to a const array of char: dynamic translation into user readable string can only be done by mapping. It need not even be printable, for example. 
-  - additionally it must be remembered they although designed to be useful for diagnostics and debugging, these strings should never be treated as trusted output and displayed to system end users. This is because by design an  _error_id_ travels as an opaque value, and hence there is no rigorous mechanism preventing the secure design error of rendering inputs of unknown origin directly to an end user. 
+  - firstly, _error_id_ is a point to a const array of char: dynamic translation into user readable string can only be done by mapping. 
+  - additionally it must be remembered they although designed to be useful for diagnostics and debugging, these strings should never be treated as trusted output and displayed to system end users. This is because by design an  _error_id_ can travel as an opaque value, and hence there is no rigorous mechanism preventing the secure design error of rendering inputs of unknown origin directly to an end user. 
 
 Wrap up
 =======
@@ -343,7 +334,7 @@ Recommendations
 Curate's Eggs
 -------------
 
-There are yet some potentially interesting ramifications that fall out from error_id that have not been demonstrated, but which we'll touch upon here.
+There are yet some potentially interesting ramifications that fall out from error_id that have not been demonstrated, but which we'll touch upon here to pique your interest.
 
 * _missing switch_: it is possible to write template metaprograms that will
     - allow statically typed handlers to be registered for a switch statement to ensure values are always handled, with various outcomes for a fall-through, (Fail, Pass, etc.)
