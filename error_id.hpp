@@ -33,15 +33,13 @@ typedef const char *error_value;
   __FILE__ ":" TOSTRING(__LINE__) " " grp "-" pkg ": " error_str " " __DATE__  \
                                   " " __TIME__
 
-// we can define a simple template parameterised upon an error_id 
+// we can define a simple template parameterised upon an error_id
 // this one has a base type and additional info
 template <error_id errtype> class typed_error : public std::exception {
 public:
-  typed_error(const char * what = NULL) : _what(what) {  }
+  typed_error(const char *what = NULL) : _what(what) {}
 
-  virtual const char *what() const throw() {
-    return (_what) ? _what : type();
-  }
+  virtual const char *what() const throw() { return (_what) ? _what : type(); }
   const char *type() const { return errtype; }
   operator const char *() { return errtype; }
 
@@ -49,11 +47,8 @@ private:
   error_id _what;
 };
 
-
-
-// And, of course we can define a minimal template parameterised upon an error_id
+// And, of course we can define a minimal template parameterised upon an
+// error_id
 template <error_id errtype> class typed_error_lite : public std::exception {};
-
-
 
 #endif /* ERROR_ID_HPP_ */

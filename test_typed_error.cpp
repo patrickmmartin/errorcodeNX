@@ -74,7 +74,7 @@ TEST_CASE("throw an error_id indirectly", "[exceptions]") {
     }
   }
 
-  SECTION("throw EFOO") {
+  SECTION("throw EFOO2") {
     try {
       // note we can throw FooErrors::EFOO2
       throw FooErrors::EFOO2;
@@ -137,11 +137,25 @@ TEST_CASE("ensure throwing exception instances works", "[exceptions]") {
 
   // another possible use of the template class is to have highly specific
   // exception handling
+
+  SECTION("throw and catch typed_error<FooErrors::EFOO>") {
+    try {
+      throw typed_error_lite<FooErrors::EFOO>();
+    } catch (typed_error<FooErrors::EFOO> &e) {
+      FAIL("caught in foo_err handler");
+    } catch (typed_error_lite<FooErrors::EFOO> &e) {
+      INFO("caught typed_error_lite<FooErrors::EFOO>");
+    } catch (...) {
+      FAIL("Fell through to catch all handler");
+    }
+  }
+
   SECTION("throw and catch typed_error<FooErrors::EFOO>") {
     try {
       throw foo_err("foo != bar");
     } catch (typed_error<FooErrors::EFOO> &e) {
       INFO("caught in foo_err handler");
+      CHECK(0 == strcmp(e.what(), "foo != bar"));
     } catch (bar_err &e) {
       FAIL("Fell through to bar_err handler");
     } catch (...) {

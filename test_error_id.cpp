@@ -46,10 +46,10 @@ TEST_CASE("check macro works", "[errorcode]") {
   CHECK(strcmp(N::new_bar, FooErrors::EBAR) == 0);
   INFO("verify the output of the macro");
   CHECK(strcmp(N::new_bar, "GRP"
-                            "-"
-                            "FOO"
-                            ": "
-                            "Foo not Bar") == 0);
+                           "-"
+                           "FOO"
+                           ": "
+                           "Foo not Bar") == 0);
 
   INFO(N::new_bar);
   CHECK(N::new_bar != FooErrors::EBAR);
