@@ -33,7 +33,7 @@ typedef const char *error_value;
   __FILE__ ":" TOSTRING(__LINE__) " " grp "-" pkg ": " error_str " " __DATE__  \
                                   " " __TIME__
 
-// we can define a simple template parameterised upon "value"
+// we can define a simple template parameterised upon an error_id 
 // this one has a base type and additional info
 template <error_id errtype> class typed_error : public std::exception {
 public:
@@ -51,7 +51,7 @@ private:
 
 
 
-// we can define a simple template parameterised upon "value"
+// And, of course we can define a minimal template parameterised upon an error_id
 template <error_id errtype> class typed_error_lite : public std::exception {};
 
 
