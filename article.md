@@ -308,16 +308,16 @@ No solution is perfect, and this is no exception, so in the spirit of allowing p
   - exception classes similar to _typed_error_ of course allow as much context as one is prepared to pay for in one object instance, 
   - if status need more context - conditions like "[file|table|foo] not found" being the most infuriating - then we have to leave it to the user to code up a solution to pass back more context
 
-* defence against abuse
+* defend against abuse
   - in a C / c++ application, there is no way to completely prevent abuse such as _error_id_ values being appropriated and used inappropriately; the intent of the proposal is to illustrate the benefits arising from the simplicity and effectiveness of using _error_id_. We hope that the solution would be adopted widely upon its own merits.
 
 * yield stable values between processes / builds
     - firstly, it should be remembered the value is not be inspected - only what it points to 
     - secondly, this is unavoidable and the solution of course stops working at the boundary of the process - marshalling status codes between different processes, binaries and even different aged builds of the same code cannot rely upon the address. This is a job for some marshalling scheme layered on top of an existing status code system.
 
-* The strings cannot be translated 
-  - firstly, _error_id_ is a point to a const array of char: dynamic translation into user readable string can only be done by mapping. 
-  - additionally it must be remembered they although designed to be useful for diagnostics and debugging, these strings should never be treated as trusted output and displayed to system end users. This is because by design an  _error_id_ can travel as an opaque value, and hence there is no rigorous mechanism preventing the secure design error of rendering inputs of unknown origin directly to an end user. 
+* be used as translatable strings
+  - the most important point to make here is these strings should never be treated as trusted output safe to be displayed to system end users. An _error_id_ can travel as an opaque value, and hence there is no rigorous mechanism that could preventing information leakage 
+  - finally _error_id_ is a pointer to a const array of char: dynamic translation into user readable strings can only be done by mapping values to known tranlsations. For even a modest size system it becomes more effective to have a facility for text translation which would offer more features relevant  to that task that just an _error_id_.
 
 Wrap up
 =======
@@ -334,13 +334,13 @@ Recommendations
 Curate's Eggs
 -------------
 
-There are yet some potentially interesting ramifications that fall out from error_id that have not been demonstrated, but which we'll touch upon here to pique your interest.
+There are yet some potentially interesting ramifications that fall out from error_id that have not been demonstrated in the interest of brevity, but which we'll touch upon here to pique your interest.
 
 * _missing switch_: it is possible to write template metaprograms that will
     - allow statically typed handlers to be registered for a switch statement to ensure values are always handled, with various outcomes for a fall-through, (Fail, Pass, etc.)
     - even prevent compilation if handlers are not located for specific  _error_id_ instances 
 * _private values_: it is possible to define an _error_id_   _typed_error_  with a value not visible to clients 
-   - for _typed error_ this would allows a standard abort via exception for reporting those error conditions not understood explicitly by callers
+   - for _typed error_ this would allows a standard "abort via exception" for reporting those error conditions not understood explicitly by callers
    - for _error id_ this can allow a hierarchy of error conditions to be defined
 * _reserved values_: it is possible to expose an _error_id_ such that it can not be used to define a _typed_error_, yet the value can still be used
 
