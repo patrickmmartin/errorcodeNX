@@ -236,7 +236,7 @@ TODO(PMM) - think about possible template instantiation concerns.
 
 There is one responsibility that is granted along with the benefit of universality: since everyone could receive an error code, there may be a need to approach declaring _error_id_ instances to some corporate standard of consistency. This may well mandate some kind of scheme perhaps based upon library, component, etc. to generate standard formats and ensure unique values.
 
-Code Sample: simple example for generating "standard" _error_id_ value.    
+### Code Sample: simple example for generating "standard" _error_id_ value.    
 ```
 #define SCOPE_ERROR(grp, pkg, error_str) grp "-" pkg ": " error_str
 
@@ -329,7 +329,7 @@ Recommendations
 
 * Define your identities for system states
 * Define how you wish to expose these identities and distribute them. For example, component level, subsystem level, applciation wide?
-* Use them rigourously
+* Use them rigorously
 
 Curate's Eggs
 -------------
