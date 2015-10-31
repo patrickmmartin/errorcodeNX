@@ -254,7 +254,7 @@ expiry of any relevant statutes.
 
 However, making use of `error_id` while simultaneously inheriting from
 a standard exception class in the `std::exception` hierarchy 
-is useful for the same reasons as for the using the raw value.
+is useful for the same reasons as for using the raw value.
 As an example: exception class templates specialised on `error_id` are
 very apt:
 
@@ -428,7 +428,7 @@ This problem is addressed by `error_id` in multiple ways:
  - note also that exposing an `error_id` is no longer a forward
    commitment, as prior values can be *removed* in new revisions of
    the interface, in addition to new ones being introduced. This is
-   of course in contrast to integral values return codes.
+   of course in contrast to integral value return codes.
 
 
 ### Code Sample: Generation of identities and unique identities
@@ -478,7 +478,7 @@ some of the common concerns one would come up with and address them:
   - this is of course a natural consequence of using a pure `error_id`
      as an identity
   - exception classes similar to `typed_error` of course allow as
-     much context as one is prepared to pay for in one object instance,
+     much context as one is prepared to pay for in each object instance
   - if status need more context - conditions like "[file|table|foo]
      not found" being the most infuriating - then we have to leave it
      to the user to code up a solution to pass back more context
