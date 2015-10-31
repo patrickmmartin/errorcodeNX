@@ -27,7 +27,7 @@ Nevertheless, error handing is everyone's responsibility and
 particularly so for applications coded in C++ and C. In this article
 we will make a proposal, which we'll call `error_id`, that can be
 used as an _identity_ concept (concept with a little "c") to ensure
-when a specific course of action is desired, the error state rePORted
+when a specific course of action is desired, the error state reported
 by an API can be unambiguously recognised at arbitrarily remote
 call sites.
 
