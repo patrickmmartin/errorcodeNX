@@ -27,7 +27,7 @@ Nevertheless, error handing is everyone's responsibility and
 particularly so for applications coded in C++ and C. In this article
 we will make a proposal, which we'll call `error_id`, that can be
 used as an _identity_ concept (concept with a little "c") to ensure
-when a specific course of action is desired, the error state reported
+when a specific course of action is desired, the error state rePORted
 by an API can be unambiguously recognised at arbitrarily remote
 call sites.
 
@@ -284,24 +284,24 @@ private:
 ```
     // somewhere
     struct FooErrors {
-        static constexpr error_id EFOO = "FOOlib: Foo error";
-        static                  error_id EBAR;
+        static constexpr error_id eFOO = "FOOlib: Foo error";
+        static                  error_id eBAR;
         ...
     };
     // elsewhere
-    error_id FooErrors::EBAR = "FOOlib: Bar error";
+    error_id FooErrors::eBAR = "FOOlib: Bar error";
     
     ...
 
     // we can define new unique exception instances
-    typedef typed_error<FooErrors::EFOO> foo_err;
-    typedef typed_error<FooErrors::EBAR> bar_err;
+    typedef typed_error<FooErrors::eFOO> foo_err;
+    typedef typed_error<FooErrors::eBAR> bar_err;
     
     try
     {
       // something that throws a typed_error
     }
-    catch (typed_error<FooErrors::EFOO> const &e)
+    catch (typed_error<FooErrors::eFOO> const &e)
     {
       // use the template
     }
@@ -337,18 +337,18 @@ of re-throw is different from the originating thrower.
 ```
     try
     {
-      // something that throws a typed_error<LibA::EPOR>
-      // if LibA::EPOR is not a publically visible value,
+      // something that throws a typed_error<LibA::ePOR>
+      // if LibA::ePOR is not a publically visible value,
       // it is not possible to write a handler for that case only
       // nor throw one, except for the code owning that identity
     }
-    catch (typed_error<LibA::EBAR> &e)
+    catch (typed_error<LibA::eBAR> &e)
     {
       // not caught
     }
     catch (std::runtime_error &e)
     {
-      // typed_error<LibA::EPOR> is caught here, conveniently
+      // typed_error<LibA::ePOR> is caught here, conveniently
     } 
 ```
 
@@ -364,7 +364,7 @@ library, component, etc. - thus:
 #define SCOPE_ERROR(grp, pkg, error_str) grp "-" pkg ": " error_str
 
 // this can be used thus
-const char LibA::EPOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
+const char LibA::ePOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
 
 // which give us the string  "GRP-FOO: Foo not reparable"
 
@@ -435,16 +435,16 @@ This problem is addressed by `error_id` in multiple ways:
 ```
 const char N::new_bar[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
  
-assert(strcmp(N::new_bar, FooErrors::EBAR) == 0);
-assert((N::new_bar != FooErrors::EBAR));
+assert(strcmp(N::new_bar, FooErrors::eBAR) == 0);
+assert((N::new_bar != FooErrors::eBAR));
  
 try
 {
   throw typed_error<N::new_bar>("bazong not convertible to bar");
 }
-catch (typed_error<FooErrors::EBAR> &e)
+catch (typed_error<FooErrors::eBAR> &e)
 {
-  assert(false, "in typed_error<FooErrors::EBAR> handler");
+  assert(false, "in typed_error<FooErrors::eBAR> handler");
 }
 catch (typed_error<N::new_bar> &e)
 {
