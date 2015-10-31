@@ -29,9 +29,12 @@ typedef const char *error_value;
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 
-#define SCOPE_ERROR_UNIQUE(grp, pkg, error_str)                                \
-  __FILE__ ":" TOSTRING(__LINE__) " " grp "-" pkg ": " error_str " " __DATE__  \
-                                  " " __TIME__
+#define SCOPE_ERROR_UNIQUE_FULL(grp, pkg, error_str)                                \
+		__FILE__ ":" TOSTRING(__LINE__) " " grp "-" pkg ": " error_str " " __DATE__  __TIME__
+
+#define SCOPE_ERROR_UNIQUE_SHORT(grp, pkg, error_str)                                \
+       (__DATE__   __TIME__  __FILE__ ":" TOSTRING(__LINE__) " " grp "-" pkg ": " error_str ) + 19
+
 
 // we can define a simple template parameterised upon an error_id
 // this one has a base type and additional info

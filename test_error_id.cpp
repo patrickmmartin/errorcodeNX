@@ -32,12 +32,18 @@ struct N {
   static const char new_foo[];
   static const char new_bar[];
   static const char new_foo2[];
+  static error_id new_foo3;
 };
 
+
 const char N::new_bar[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
-const char N::new_foo[] = SCOPE_ERROR_UNIQUE("GRP", "FOO", "Foo not Bar");
-const char N::new_foo2[] = SCOPE_ERROR_UNIQUE("GRP", "FOO", "Foo not Bar");
+const char N::new_foo[] = SCOPE_ERROR_UNIQUE_FULL("GRP", "FOO", "Foo not Bar");
+const char N::new_foo2[] = SCOPE_ERROR_UNIQUE_FULL("GRP", "FOO", "Foo not Bar");
+error_id N::new_foo3 = SCOPE_ERROR_UNIQUE_SHORT("GRP", "FOO", "Foo not Bar");
+
+
 }
+
 
 TEST_CASE("check macro works", "[errorcode]") {
 
@@ -53,8 +59,14 @@ TEST_CASE("check macro works", "[errorcode]") {
 
   INFO(N::new_bar);
   CHECK(N::new_bar != FooErrors::EBAR);
+  INFO("checking the simple macro");
   INFO(N::new_foo2);
   CHECK(N::new_foo != N::new_foo2);
+
+  INFO("checking the macro trick works");
+  INFO(N::new_foo3);
+  CHECK(strcmp(N::new_foo3, "..\\test_error_id.cpp:42 GRP-FOO: Foo not Bar") == 0);
+
 }
 
 TEST_CASE("access values directly", "[errorcode]") {

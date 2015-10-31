@@ -38,11 +38,14 @@ struct N {
   static const char new_foo[];
   static const char new_bar[];
   static const char new_foo2[];
+  static error_id new_foo3;
 };
 
 const char N::new_bar[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
-const char N::new_foo[] = SCOPE_ERROR_UNIQUE("GRP", "FOO", "Foo not Bar");
-const char N::new_foo2[] = SCOPE_ERROR_UNIQUE("GRP", "FOO", "Foo not Bar");
+const char N::new_foo[] = SCOPE_ERROR_UNIQUE_FULL("GRP", "FOO", "Foo not Bar");
+const char N::new_foo2[] = SCOPE_ERROR_UNIQUE_FULL("GRP", "FOO", "Foo not Bar");
+
+error_id N::new_foo3 = SCOPE_ERROR_UNIQUE_SHORT("GRP", "FOO", "Foo not Bar");
 }
 
 TEST_CASE("throw an error_id from this translation unit", "[exceptions]") {
