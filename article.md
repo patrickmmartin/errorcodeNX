@@ -31,7 +31,7 @@ when a specific course of action is desired, the error state reported
 by an API can be unambiguously recognised at arbitrarily remote
 call sites.
 
-Review of c++ and C approaches
+Review of C++ and C approaches
 ====
 
 A very common style for reporting from functions in C and C++ is using
