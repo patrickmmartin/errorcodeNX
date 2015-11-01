@@ -56,7 +56,13 @@ TEST_CASE("check macro works", "[errorcode]") {
 
   INFO("checking the macro trick works");
   INFO(N::new_foo3);
+
+ // this symbol seems to be most widely defined
+#ifdef _WIN32
   CHECK(!strcmp(N::new_foo3, "..\\test_error_id.cpp:33 GRP-FOO: Foo not Bar"));
+#else
+  CHECK(!strcmp(N::new_foo3, "../test_error_id.cpp:33 GRP-FOO: Foo not Bar"));
+#endif
 
 }
 
