@@ -17,15 +17,6 @@
 
 #include "fooerrors.h"
 
-// we can define new unique exception instances
-typedef typed_error<FooErrors::EFOO> foo_err;
-
-typedef typed_error<FooErrors::EBAR> bar_err;
-
-// or we can use the value directly
-error_id const A = FooErrors::EFOO;
-error_id const B = FooErrors::EBAR;
-
 namespace {
 // the concept can be used directly for a basic unique error condition
 struct N {
@@ -49,34 +40,34 @@ TEST_CASE("check macro works", "[errorcode]") {
 
   INFO(N::new_bar);
   INFO("equality of error strings generated the same way is possible");
-  CHECK(strcmp(N::new_bar, FooErrors::EBAR) == 0);
+  CHECK(!strcmp(N::new_bar, FooErrors::eBAR));
   INFO("verify the output of the macro");
-  CHECK(strcmp(N::new_bar, "GRP"
+  CHECK(!strcmp(N::new_bar, "GRP"
                            "-"
                            "FOO"
                            ": "
-                           "Foo not Bar") == 0);
+                           "Foo not Bar"));
 
   INFO(N::new_bar);
-  CHECK(N::new_bar != FooErrors::EBAR);
+  CHECK((N::new_bar != FooErrors::eBAR));
   INFO("checking the simple macro");
   INFO(N::new_foo2);
-  CHECK(N::new_foo != N::new_foo2);
+  CHECK((N::new_foo != N::new_foo2));
 
   INFO("checking the macro trick works");
   INFO(N::new_foo3);
-  CHECK(strcmp(N::new_foo3, "..\\test_error_id.cpp:42 GRP-FOO: Foo not Bar") == 0);
+  CHECK(!strcmp(N::new_foo3, "..\\test_error_id.cpp:33 GRP-FOO: Foo not Bar"));
 
 }
 
 TEST_CASE("access values directly", "[errorcode]") {
 
   // the concept can be used directly for a basic unique error condition
-  error_id raw_foo = FooErrors::EBAR;
+  error_id raw_foo = FooErrors::eBAR;
 
   INFO("testing raw values");
-  CHECK(raw_foo == FooErrors::EBAR);
-  CHECK(raw_foo != FooErrors::EFOO);
+  CHECK((raw_foo == FooErrors::eBAR));
+  CHECK((raw_foo != FooErrors::eFOO));
 }
 
 TEST_CASE("check values write correctly", "[errorcode]") {
@@ -90,24 +81,24 @@ TEST_CASE("check values write correctly", "[errorcode]") {
 
   ostr << raw_foo;
   INFO(ostr.str());
-  CHECK(ostr.str() == "");
+  CHECK((ostr.str() == ""));
 
   snprintf(buf, sizeof(buf), "%s", raw_foo);
   INFO(buf);
   std::string bufstr = buf;
-  CHECK(bufstr == buf);
+  CHECK((bufstr == buf));
 
-  raw_foo = FooErrors::EBAR;
+  raw_foo = FooErrors::eBAR;
   ostr.str("");
   ostr.clear();
   ostr << raw_foo;
   INFO(ostr.str());
-  CHECK(ostr.str() == FooErrors::EBAR);
+  CHECK((ostr.str() == FooErrors::eBAR));
 
   snprintf(buf, sizeof(buf), "%s", raw_foo);
   bufstr = buf;
   INFO(bufstr);
-  CHECK(bufstr == std::string(FooErrors::EBAR));
+  CHECK((bufstr == std::string(FooErrors::eBAR)));
 }
 
 TEST_CASE("check returned values", "[errorcode]") {
@@ -117,19 +108,19 @@ TEST_CASE("check returned values", "[errorcode]") {
     error_value err;
     err = LibA::return_me(0);
     INFO(err);
-    CHECK(err != FooErrors::EBAR);
-    CHECK(err != FooErrors::EFOO);
-    CHECK(err == LibA::EFOO);
+    CHECK((err != FooErrors::eBAR));
+    CHECK((err != FooErrors::eFOO));
+    CHECK((err == LibA::eFOO));
 
     err = LibA::return_me(1);
     INFO(err);
-    CHECK(err != FooErrors::EBAR);
-    CHECK(err != FooErrors::EFOO);
-    CHECK(err == LibA::EBAR);
+    CHECK((err != FooErrors::eBAR));
+    CHECK((err != FooErrors::eFOO));
+    CHECK((err == LibA::eBAR));
 
     err = LibA::return_me(-1);
     INFO(err);
-    CHECK(err != FooErrors::EBAR);
-    CHECK(err != FooErrors::EFOO);
+    CHECK((err != FooErrors::eBAR));
+    CHECK((err != FooErrors::eFOO));
   }
 }

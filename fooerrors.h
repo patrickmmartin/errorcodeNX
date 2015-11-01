@@ -10,12 +10,12 @@
 
 class FooErrors {
 public:
-  static const char EFOO[];
-  static const char EBAR[];
-  static const char EPOR[];
-  static const char *EFOO2;
+  static const char eFOO[];
+  static const char eBAR[];
+  static const char ePOR[];
+  static const char *eFOO2;
 };
 
-void throw_EFOO();
+void throw_eFOO();
 
 #endif /* FOOERRORS_H_ */

@@ -15,12 +15,12 @@
 class LibA {
 
 public:
-  static const char EFOO[];
-  static const char EBAR[];
+  static const char eFOO[];
+  static const char eBAR[];
 
   static error_value return_me(int input);
 
-  static typed_error<EFOO> get_foo(const char *message = NULL);
+  static typed_error<eFOO> get_foo(const char *message = NULL);
 
   static void foo_me(const char *message = NULL);
 
@@ -29,7 +29,7 @@ public:
   static void suprise_me(const char *message = NULL);
 
 private:
-  static const char EPOR[];
+  static const char ePOR[];
 };
 
 #endif /* LIBA_H_ */

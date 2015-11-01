@@ -9,35 +9,35 @@
 
 #include "error_id.hpp"
 
-const char LibA::EFOO[] = SCOPE_ERROR("GRP", "FOO", "Foo clobbered BAR on use");
-const char LibA::EBAR[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
-const char LibA::EPOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
+const char LibA::eFOO[] = SCOPE_ERROR("GRP", "FOO", "Foo clobbered BAR on use");
+const char LibA::eBAR[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
+const char LibA::ePOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
 
 error_value LibA::return_me(int input) {
   switch (input) {
   case 0:
-    return LibA::EFOO;
+    return LibA::eFOO;
 
   case 1:
-    return LibA::EBAR;
+    return LibA::eBAR;
 
   default:
-    return LibA::EPOR;
+    return LibA::ePOR;
   }
 }
 
-typed_error<LibA::EFOO> LibA::get_foo(const char *message) {
-  return typed_error<LibA::EFOO>(message);
+typed_error<LibA::eFOO> LibA::get_foo(const char *message) {
+  return typed_error<LibA::eFOO>(message);
 }
 
 void LibA::foo_me(const char *message) {
-  throw typed_error<LibA::EFOO>(message);
+  throw typed_error<LibA::eFOO>(message);
 }
 
 void LibA::bar_me(const char *message) {
-  throw typed_error<LibA::EBAR>(message);
+  throw typed_error<LibA::eBAR>(message);
 }
 
 void LibA::suprise_me(const char *message) {
-  throw typed_error<LibA::EPOR>(message);
+  throw typed_error<LibA::ePOR>(message);
 }

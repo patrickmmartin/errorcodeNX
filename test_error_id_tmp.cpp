@@ -41,14 +41,14 @@ TEST_CASE("demonstrate static dispatchers", "[errorcode]") {
   dispatch_default_called = false;
   dispatch_foo_called = false;
 
-  ErrorDispatcher<FooErrors::EFOO>()();
+  ErrorDispatcher<FooErrors::eFOO>()();
   CHECK(dispatch_foo_called);
 
-  ErrorDispatcher<FooErrors::EBAR>()();
+  ErrorDispatcher<FooErrors::eBAR>()();
   CHECK(dispatch_default_called);
 }
 
-template <> void ErrorDispatcher<FooErrors::EFOO>::dispatchError() {
+template <> void ErrorDispatcher<FooErrors::eFOO>::dispatchError() {
   dispatch_foo_called = true;
 }
 
@@ -62,10 +62,10 @@ TEST_CASE("demonstrate static dispatchers adding case", "[errorcode]") {
   dispatch_default_called = false;
   dispatch_foo_called = false;
 
-  ErrorDispatcher<FooErrors::EFOO>()();
+  ErrorDispatcher<FooErrors::eFOO>()();
   CHECK(dispatch_foo_called);
 
-  ErrorDispatcher<FooErrors::EBAR>()();
+  ErrorDispatcher<FooErrors::eBAR>()();
   CHECK(dispatch_default_called);
 }
 
@@ -78,17 +78,17 @@ bool switch_foo_called = false;
  */
 template <error_id err_type> struct ErrorHandler;
 
-/** specialisation for FooErrors::EFOO
+/** specialisation for FooErrors::eFOO
  *
  */
-template <> struct ErrorHandler<FooErrors::EFOO> {
+template <> struct ErrorHandler<FooErrors::eFOO> {
   void operator()() { switch_foo_called = true; }
 };
 
 /** specialisation for FooErrors::BAR
  *
  */
-template <> struct ErrorHandler<FooErrors::EBAR> {
+template <> struct ErrorHandler<FooErrors::eBAR> {
   void operator()() {}
 };
 
@@ -154,25 +154,25 @@ TEST_CASE("demonstrate error typelist handlers with fallthrough pass",
    * passed in with fall-through
    * X, Y
    */
-  typedef ErrorList<FooErrors::EFOO, ErrorList<FooErrors::EBAR, PassType> >
+  typedef ErrorList<FooErrors::eFOO, ErrorList<FooErrors::eBAR, PassType> >
       ErrorsXY;
 
   // exercising with constants
-  CheckList<ErrorsXY>()(FooErrors::EFOO);
-  CheckList<ErrorsXY>()(FooErrors::EBAR);
-  CheckList<ErrorsXY>()(FooErrors::EPOR);
+  CheckList<ErrorsXY>()(FooErrors::eFOO);
+  CheckList<ErrorsXY>()(FooErrors::eBAR);
+  CheckList<ErrorsXY>()(FooErrors::ePOR);
 
   // exercising with variables
-  error_value K = FooErrors::EFOO;
+  error_value K = FooErrors::eFOO;
   CheckList<ErrorsXY>()(K);
-  CHECK(switch_foo_called == true);
+  CHECK(switch_foo_called);
 
-  K = FooErrors::EBAR;
+  K = FooErrors::eBAR;
   CheckList<ErrorsXY>()(K);
 
-  K = FooErrors::EPOR;
+  K = FooErrors::ePOR;
   CheckList<ErrorsXY>()(K);
-  CHECK(switch_default_pass_called == true);
+  CHECK(switch_default_pass_called);
 }
 
 TEST_CASE("demonstrate typelist handlers with fallthrough fail",
@@ -187,24 +187,24 @@ TEST_CASE("demonstrate typelist handlers with fallthrough fail",
    * passed and fall-through is an error
    * X, Y
    */
-  typedef ErrorList<FooErrors::EFOO, ErrorList<FooErrors::EBAR, FailType> >
+  typedef ErrorList<FooErrors::eFOO, ErrorList<FooErrors::eBAR, FailType> >
       ErrorsXYOnly;
 
   // exercising with variables
-  error_value K = FooErrors::EFOO;
+  error_value K = FooErrors::eFOO;
 
   // exercising with variables
-  K = FooErrors::EFOO;
+  K = FooErrors::eFOO;
 
   CheckList<ErrorsXYOnly>()(K);
-  CHECK(switch_foo_called == true);
+  CHECK(switch_foo_called);
 
-  K = FooErrors::EBAR;
+  K = FooErrors::eBAR;
   CheckList<ErrorsXYOnly>()(K);
 
-  K = FooErrors::EPOR;
+  K = FooErrors::ePOR;
   CheckList<ErrorsXYOnly>()(K);
-  CHECK(switch_default_fail_called == true);
+  CHECK(switch_default_fail_called);
 
   // illustrates statically mandating handlers for specified error codes
   // this cannot compile without an implementation of ErrorHandler<FooErrors::Z>
