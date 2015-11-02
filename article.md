@@ -9,9 +9,9 @@ cases and returning codes for error handling is sometimes preferable.
 However, using integral types for error identification is problematic
 as there is no good mechanism to guarantee that each value uniquely
 identifies a specific error. This article proposes the use of
-pointers to string literals instead as these can be made unique
-quite easily. In addition pointers to string literals also yield a
-simple way to get an indication of the cause of an error.
+`char` arrays instead as these are unique straight away. In addition
+`char` arrays also yield a simple way to get an indication of the
+cause of an error.
 
 Problem statement
 ====
@@ -84,10 +84,10 @@ error_id type proposal
 The proposed type for `error_id` is`typedef char const error_id[]`
 which is the _error constant_ whereas the
 _variable_ is of course `typedef char const* error_value`. The idea
-is that each `error_id` is initialized with a string literal making
-its value unique in a process without any need of registration. Note
-that functions returning an `error_id` need to be declared to return
-an `error_value` because functions can't return arrays.
+is that each `error_id` is made unique by the linker in a process
+without any need of registration. Note that functions returning an
+`error_id` need to be declared to return an `error_value` because
+functions can't return arrays.
 
 We strongly recommend this value should be printable and make sense
 in the context of inspecting system state from logs, messages, cores
