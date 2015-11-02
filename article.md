@@ -99,15 +99,6 @@ An honourable mention should be made of the second example in the
 _rogues' gallery_ of exception anti-patterns we present later 
 as that author was part of the way towards our proposal.
 
-It is implementation defined whether identical string literals use
-identical or different addresses [c++ std lex.string para 13]. In
-fact, barring inspecting the program core at runtime, or having
-higher order knowledge of the declaration of symbols, this constant
-folding is one of the few ways to obtain the value _a priori_ without
-having access to the correct symbol in code. It still requires exact
-knowledge of the string literal used. Below we discuss how to arrange
-for unique string literals to be used.
-
 As such, we contend that a constant of this type can be used as an
 _identity_ concept, whose values can be passed through opaquely
 from any callee to any caller. Caller and callee can be separated
@@ -543,6 +534,11 @@ employing actual exceptions, and maintaining a high level of
 usability for debugging. This approach will allow both C and C++ libraries
 to become first class citizens in a design where error handling
 need never be left to chance or assumption.
+
+Please note that it is implementation defined whether identical string literals use
+identical or different addresses [c++ std lex.string para 13]. In fact, constant folding
+where one string literal becomes the data for many identical declarations of string literals
+in code occurs in many current compilers. Hence it is key to use char arrays where this does not happen.
 
 Recommendations
 ====
