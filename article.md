@@ -376,35 +376,22 @@ const char LibA::ePOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
 // Organisations can exploit other preprocessor features to ensure uniqueness
 #define TOSTRING(x) #x
 
-#define SCOPE_ERROR_UNIQUE_FULL(grp, pkg, error_str)                                \
-		__FILE__ ":" TOSTRING(__LINE__) " " grp "-" pkg ": " error_str " " __DATE__  __TIME__ 
+#define SCOPE_ERROR_LOCATION(grp, pkg, error_str)                                \
+		__FILE__ ":" TOSTRING(__LINE__) " " grp "-" pkg ": " error_str " "
 
 // which give us a string like 
-// ../test_error_id.cpp:39 GRP-FOO: Foo not Bar Oct  4 2015 12:07:30
+// ../test_error_id.cpp:39 GRP-FOO: Foo not Bar
 ```
 
-In summary, the only risk from identical string literals resulting in
-two distinct `error_id` declarations being given the same value is when these `error_id`
-symbols need to be distinguishable when a variable may be intended to hold either identity.
-However the identity of an `error_id` derives entirely from its _content_, further reinforcing
-the utility of a rule requiring `error_id` content which is printable and describes a unique identity uniquely.
-
-If one really wants to strongly eliminate the risk of a collision and avoid spamming 
-logs with build date information there is a technique that generates a cleaner printable string.
-
-### Code Sample: simple example for generating more concise "standard" `error_id` value.    
-
-```
-#define SCOPE_ERROR_UNIQUE_SHORT(grp, pkg, error_str)                                \
-       (__FILE__ ":" TOSTRING(__LINE__) " " grp "-" pkg ": " error_str "\0" __DATE__ __TIME__)
-// which gives us a more concise string
-// ..\test_error_id.cpp:42 GRP-FOO: Foo not Bar
-```
-
-The entire idea here is that the string literal contains a date and a time to make
-it unique but embedding a null character results in the string being printed without
-the date and time. Obviously, depending on needs other parts of string like the file
-can be made similarly invisible.
+In summary, the primary risk from identical strings in
+two logically distinct `error_id` declarations is when these `error_id`
+symbols need to be distinguishable by some calling code when an `error_value` may
+receive a value of either identity. `error_id` does not have an issue and
+"does the right thing" from the viewpoint of reading the code. However it should
+be remembered the identity of an `error_id` is intended to derive entirely from
+its _content_, and in the prior case, the printed values will be the same,
+further reinforcing the utility of a rule requiring `error_id` content which is
+printable and distinct for each unique identity.
 
 No Existential Forgery of `error_id`
 --------------------------------------
