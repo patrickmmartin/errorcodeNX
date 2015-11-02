@@ -15,7 +15,7 @@ static bool dispatch_foo_called = false;
 
 template <error_id errtype> class ErrorDispatcher {
 private:
-  error_id _errtype;
+  error_value _errtype;
   void dispatchError() { dispatch_default_called = true; };
 
 public:

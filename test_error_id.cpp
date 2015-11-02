@@ -20,17 +20,15 @@
 namespace {
 // the concept can be used directly for a basic unique error condition
 struct N {
-  static const char new_foo[];
-  static const char new_bar[];
-  static const char new_foo2[];
-  static error_id new_foo3;
+  static error_id new_foo;
+  static error_id new_bar;
+  static error_id new_foo2;
 };
 
 
 const char N::new_bar[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
 const char N::new_foo[] = SCOPE_ERROR_UNIQUE_FULL("GRP", "FOO", "Foo not Bar");
 const char N::new_foo2[] = SCOPE_ERROR_UNIQUE_FULL("GRP", "FOO", "Foo not Bar");
-error_id N::new_foo3 = SCOPE_ERROR_UNIQUE_SHORT("GRP", "FOO", "Foo not Bar");
 
 
 }
@@ -54,22 +52,12 @@ TEST_CASE("check macro works", "[errorcode]") {
   INFO(N::new_foo2);
   CHECK((N::new_foo != N::new_foo2));
 
-  INFO("checking the macro trick works");
-  INFO(N::new_foo3);
-
- // this symbol seems to be most widely defined
-#ifdef _WIN32
-  CHECK(!strcmp(N::new_foo3, "..\\test_error_id.cpp:33 GRP-FOO: Foo not Bar"));
-#else
-  CHECK(!strcmp(N::new_foo3, "../test_error_id.cpp:33 GRP-FOO: Foo not Bar"));
-#endif
-
 }
 
 TEST_CASE("access values directly", "[errorcode]") {
 
   // the concept can be used directly for a basic unique error condition
-  error_id raw_foo = FooErrors::eBAR;
+  error_value raw_foo = FooErrors::eBAR;
 
   INFO("testing raw values");
   CHECK((raw_foo == FooErrors::eBAR));

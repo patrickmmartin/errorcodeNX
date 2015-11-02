@@ -194,34 +194,29 @@ TEST_CASE("ensure throwing exception instances works", "[exceptions]") {
 TEST_CASE("ensure handling thrown exception instances works", "[exceptions]") {
 
   // check specific exception handling
-  SECTION("throw and catch typed_error<LibA::eFOO>") {
-    try {
-      LibA::foo_me();
-    } catch (typed_error<LibA::eFOO> &e) {
-      INFO("caught in LibA::eFOO handler");
-    } catch (...) {
-      FAIL("Fell through to catch all handler");
-    }
-  }
+	try {
+	  LibA::foo_me("FOO");
+	} catch (typed_error<LibA::eFOO> &e) {
+	  INFO("caught in LibA::eFOO handler");
+	} catch (...) {
+	  FAIL("Fell through to catch all handler for LibA::foo_me()");
+	}
 
-  SECTION("throw and catch typed_error<LibA::eBAR>") {
-    try {
-      LibA::bar_me();
-    } catch (typed_error<LibA::eBAR> &e) {
-      INFO("Caught in LibA::eFOO handler");
-    } catch (...) {
-      FAIL("Fell through to catch all handler");
-    }
-  }
-  SECTION("throw and catch unknown") {
-    try {
-      LibA::suprise_me();
-    } catch (typed_error<LibA::eBAR> &e) {
-      FAIL("Caught in LibA::eBAR handler");
-    } catch (std::exception &e) {
-      INFO(e.what());
-    } catch (...) {
-      FAIL("Fell through to catch all handler");
-    }
-  }
+	try {
+	  LibA::bar_me("BAR");
+	} catch (typed_error<LibA::eBAR> &e) {
+	  INFO("Caught in LibA::eFOO handler");
+	} catch (...) {
+		  FAIL("Fell through to catch all handler for LibA::bar_me()");
+	}
+
+	try {
+	  LibA::suprise_me("SURPRISE");
+	} catch (typed_error<LibA::eBAR> &e) {
+	  FAIL("Caught in LibA::eBAR handler");
+	} catch (std::exception &e) {
+	  INFO(e.what());
+	} catch (...) {
+		  FAIL("Fell through to catch all handler for LibA::surprise_me()");
+	}
 }
