@@ -20,13 +20,13 @@ public:
 
   static error_value return_me(int input);
 
-  static typed_error<eFOO> get_foo(const char *message = NULL);
+  static typed_error<eFOO> get_foo(const char *message);
 
-  static void foo_me(const char *message = NULL);
+  static void foo_me(const char *message);
 
-  static void bar_me(const char *message = NULL);
+  static void bar_me(const char *message);
 
-  static void suprise_me(const char *message = NULL);
+  static void suprise_me(const char *message);
 
 private:
   static const char ePOR[];
