@@ -19,8 +19,8 @@ Problem statement
 High quality software requires a well defined and straightforward
 error handling strategy to allow a system to protect or verify its
 invariants in the face of invalid input or runtime state. There are
-many positions taken on how to achieve this see [Google 2015],
-[Bloomberg 2015] [Mozilla 2015] [Wikipedia 2015]. It seems clear
+many positions taken on how to achieve this (see [Google 2015],
+[Bloomberg 2015] [Mozilla 2015] [Wikipedia 2015]). It seems clear
 that there is not yet a consensus on the issue.
 
 Nevertheless, error handing is everyone's responsibility and
@@ -81,11 +81,13 @@ this has a number of critiques on how this will scale:
 error_id type proposal
 ====
 
-The proposed type for `error_id` is`typedef char const* const error_id`
+The proposed type for `error_id` is`typedef char const error_id[]`
 which is the _error constant_ whereas the
 _variable_ is of course `typedef char const* error_value`. The idea
 is that each `error_id` is initialized with a string literal making
-its value unique in a process without any need of registration.
+its value unique in a process without any need of registration. Note
+that functions returning an `error_id` need to be declared to return
+an `error_value` because functions can't return arrays.
 
 We strongly recommend this value should be printable and make sense
 in the context of inspecting system state from logs, messages, cores
@@ -103,7 +105,8 @@ fact, barring inspecting the program core at runtime, or having
 higher order knowledge of the declaration of symbols, this constant
 folding is one of the few ways to obtain the value _a priori_ without
 having access to the correct symbol in code. It still requires exact
-knowledge of the string literal used.
+knowledge of the string literal used. Below we discuss how to arrange
+for unique string literals to be used.
 
 As such, we contend that a constant of this type can be used as an
 _identity_ concept, whose values can be passed through opaquely
@@ -122,9 +125,10 @@ concepts supported at the language level.
 ```
 // declaration of an error_id:
 extern error_id MY_KNOWN_ERROR;
+extern error_value get_an_error();
 ...
 // definition of an error_id:
-error_id MY_KNOWN_ERROR= "My Foo Status";
+error_id MY_KNOWN_ERROR = "My Foo Status";
 
 ...
 
@@ -146,7 +150,7 @@ if (ret)
      // for this interesting case, here we might need to do additional work
      // for logging, notification and the life
    }
-   mylogger <<  "api_call returned " ret << "/n";
+   mylogger <<  "api_call returned " << ret << "\n";
     
 }
 return ret;  /// we can always do this with no loss of information
@@ -158,19 +162,30 @@ return ret;  /// we can always do this with no loss of information
 An `error_id` has a number of good properties, in addition to being
 a familiar type to all C and C++ programmers.
 
-* it is a built in type _in C and c++_ - and has the expected
+* it is a built in type _in C and C++_ - and has the expected
   semantics: the comparison ```if (error)``` will test for presence
   of an error condition.
 * default use is efficient
-* Safe for concurrent access
+* safe for concurrent access
 * usage is exception free 
-* Globally registered, the linker handles it [standard section,
-  dynamic loading etc.] [If patching your binary is your thing,
-  then enjoy, but please beware what implications that process has]
-* If the content is a printable string constant, (which we strongly
+* globally registered, the linker handles it [If patching your binary
+  is your thing, then enjoy, but please beware what implications that
+  process has]
+* if the content is a printable string constant, (which we strongly
   recommend) then it inherently supports printing for logging purposes
-  and can be read for debugging. Even the oddity of printing the
-  "missing `error_id`" (`NULL`) results in a safe operation for streams and printf.
+  and can be read for debugging. Sadly, printing the "missing `error_id`"
+  (`NULL`) results in undefined behaviour for streams and
+  `printf`, i.e., upon success the "error result" can't be printed
+  directly.
+
+For the last point it is helpful to use a simply utility function which
+arranges to turn the result into always printable values:
+
+```
+error_value error_string(error_value ret) {
+    return ret? ret: "<no error>";
+}
+```
 
 `error_id` usage examples - "C style"
 ====
@@ -268,35 +283,33 @@ template <error_id errtype> class typed_error_lite : public std::exception {};
 // this one has a base type and additional info
 template <error_id errtype> class typed_error : public std::runtime_error {
 public:
-  typed_error(const char *what = NULL) : _what(what) {}
+  typed_error(const char* what = errtype): std::runtime_error(what) {}
 
-  virtual const char *what() const throw() { return (_what) ? _what : type(); }
   const char *type() const { return errtype; }
   operator const char *() { return errtype; }
-
-private:
-  error_id _what;
 };
 ```
 
 ### Code Sample: define and handle exceptions concisely based upon an `error_id`
 
 ```
-    // somewhere
-    struct FooErrors {
-        static constexpr error_id eFOO = "FOOlib: Foo error";
-        static                  error_id eBAR;
-        ...
-    };
-    // elsewhere
-    error_id FooErrors::eBAR = "FOOlib: Bar error";
-    
-    ...
+// somewhere
+struct FooErrors {
+    static constexpr error_id eFOO = "FOOlib: Foo error";
+    static           error_id eBAR;
+    //...
+};
+// elsewhere
+constexpr error_id FooErrors::eFOO; // a definition is still required
+error_id FooErrors::eBAR = "FOOlib: Bar error";
 
-    // we can define new unique exception instances
-    typedef typed_error<FooErrors::eFOO> foo_err;
-    typedef typed_error<FooErrors::eBAR> bar_err;
-    
+...
+
+// we can define new unique exception instances
+typedef typed_error<FooErrors::eFOO> foo_err;
+typedef typed_error<FooErrors::eBAR> bar_err;
+
+void f() {    
     try
     {
       // something that throws a typed_error
@@ -319,6 +332,7 @@ private:
     {
       // we don't get here
     }
+}
 ```
 
 This approach has some rather neat properties: we can avoid "false
@@ -369,8 +383,7 @@ const char LibA::ePOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
 // which give us the string  "GRP-FOO: Foo not reparable"
 
 // Organisations can exploit other preprocessor features to ensure uniqueness
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
+#define TOSTRING(x) #x
 
 #define SCOPE_ERROR_UNIQUE_FULL(grp, pkg, error_str)                                \
 		__FILE__ ":" TOSTRING(__LINE__) " " grp "-" pkg ": " error_str " " __DATE__  __TIME__ 
@@ -392,12 +405,15 @@ logs with build date information there is a technique that generates a cleaner p
 
 ```
 #define SCOPE_ERROR_UNIQUE_SHORT(grp, pkg, error_str)                                \
-       (__DATE__   __TIME__  __FILE__ ":" TOSTRING(__LINE__) " " grp "-" pkg ": " error_str ) + 19
+       (__FILE__ ":" TOSTRING(__LINE__) " " grp "-" pkg ": " error_str "\0" __DATE__ __TIME__)
 // which gives us a more concise string
 // ..\test_error_id.cpp:42 GRP-FOO: Foo not Bar
 ```
 
-Note that all the prior macros generate char array values suitable for use as the template parameters to the `typed_error_lite`, `typed_error` templates - whereas this approach produces more readable strings from a unique string literal, but that value being an address cannot be used thus. 
+The entire idea here is that the string literal contains a date and a time to make
+it unique but embedding a null character results in the string being printed without
+the date and time. Obviously, depending on needs other parts of string like the file
+can be made similarly invisible.
 
 No Existential Forgery of `error_id`
 --------------------------------------
@@ -444,7 +460,7 @@ try
 }
 catch (typed_error<FooErrors::eBAR> &e)
 {
-  assert(false, "in typed_error<FooErrors::eBAR> handler");
+  assert(0 == "in typed_error<FooErrors::eBAR> handler");
 }
 catch (typed_error<N::new_bar> &e)
 {
@@ -452,7 +468,7 @@ catch (typed_error<N::new_bar> &e)
 }
 catch (...)
 {
-  assert(false, "Fell through to catch all handler");
+  assert(0 == "Fell through to catch all handler");
 }
 ```
 
@@ -464,24 +480,25 @@ of allowing people to choose for themselves, let us attempt to list
 some of the common concerns one would come up with and address them:
 
 * `error_id`s cannot be cases in ```switch``` statements
-    - we do not see this as much of an issue as this
+    - we do not see this as much of an issue as this restriction
        only applies to code using raw`error_id`, and not exceptions
        and there are two main use cases:
     1. hand crafting the mapping between incompatible return statuses.
-       For this we propose it should not be necessary as `error_id`
+       This use should not be necessary as `error_id`
        values would ideally only need to be thrown/returned and consumed
     2. finally reaching code responsible for handling a set of
        specific codes differently. In this case, chained ```if/else
        if``` blocks for integral types should suffice.
     
 * return additional info 
-  - this is of course a natural consequence of using a pure `error_id`
-     as an identity
+  - this restriction is of course a natural consequence of using a pure
+    `error_id` as an identity
   - exception classes similar to `typed_error` of course allow as
      much context as one is prepared to pay for in each object instance
   - if status need more context - conditions like "[file|table|foo]
      not found" being the most infuriating - then we have to leave it
-     to the user to code up a solution to pass back more context
+     to the user to code up a solution to pass back more context. The
+     same restriction applies when using integral results.
 
 * defend against abuse
   - in a C / C++ application, there is no way to completely prevent
@@ -549,19 +566,18 @@ of brevity, but which we'll touch upon here to pique your interest.
        outcomes for a fall-through, (Fail, Pass, etc.)
     - even prevent compilation if handlers are not located for
        specific `error_id` instances
-* _private values_: it is possible to define an `error_id`
-   _typed_error_ with a value not visible to clients
+* _private values_: it is possible to define a `error_id` with an
+    value not visible to clients
    - for _typed error_ this would allows a standard "abort via
       exception" for reporting those error conditions not understood
       explicitly by callers
-   - for _error id_ this can allow a hierarchy of error conditions
+   - for raw _error id_ this can allow a crude hierarchy of error conditions
       to be defined
-* _reserved values_: it is possible to expose an `error_id` such
-   that it cannot be used to define a _typed_error_, yet the value
-   can still be used
 
 
 ### References
+
+Code illustrating the concept can be found at https://github.com/patrickmmartin/errorcodeNX/tree/article_nov_2015
 
 [Google 2015, http://google.github.io/styleguide/cppguide.html ]
 
@@ -574,5 +590,3 @@ of brevity, but which we'll touch upon here to pique your interest.
 [Ruby 2015, http://ruby-doc.org/core-1.9.3/Symbol.html]
 
 [Clojure 2015, http://clojure.org/data_structures#toc8]
-
-
