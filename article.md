@@ -127,8 +127,13 @@ error_id MY_KNOWN_ERROR = "My Foo Status";
 
 error_value ret = get_an_error();
 /*
-if (ret == "My Foo Status") // does not compile with -Wall -Werror
-                            //"comparison with string literal results in unspecified behaviour" 
+if (ret == "My Foo Status") // does not compile
+                            // with -Wall -Werror
+                            // "comparison with 
+                            // string literal
+                            // results in 
+                            // unspecified
+                            // behaviour" 
 {
     ...
 }
@@ -138,13 +143,15 @@ if (ret)
 {
    if (ret == MY_KNOWN_ERROR) // this is how to test
    {
-     // for this interesting case, here we might need to do additional work
-     // for logging, notification and the life
+     // for this interesting case, here we might
+     // need to do additional work
+     // for logging, notification and the like
    }
    mylogger <<  "api_call returned " << ret << "\n";
     
 }
-return ret;  /// we can always do this with no loss of information
+return ret;  // we can always do this with no
+             // loss of information
 ```
 
 `error_id` desirable properties 
@@ -205,7 +212,8 @@ ret = awaken_force();
 if (ret)
 {
      // list known continuable errors here
-     if ((ret == E_FORD_BROKEN_ANKLE) || (ret == E_FORD_TRANSPORTATION_INCIDENT) &&
+     if ((ret == e_FORD_BROKEN_ANKLE) ||
+         (ret == e_FORD_TRANSPORTATION_INCIDENT) &&
          (Ford::scenes::in_the_can()))
      {
         print_local_failure(ret); // whoops!
@@ -228,11 +236,14 @@ for (test_step : test_steps)
     ret = test_step(args);
     if (ret)
     {
-        log << "raised error [" << ret << "] in test step " << test_step << '\n';
+        log << "raised error [" << ret << "] " 
+               "in test step " <<
+               test_step << '\n';
         return ret;
     }
     // alternatively we might run all,
-    // or more and produce a nicely formatted table for debugging / monitoring
+    // or more and produce a nicely formatted
+    // table for debugging / monitoring
     
 }
 ```
@@ -268,13 +279,16 @@ very apt:
   
 ```  
 // we can define a simple template parameterised upon the error_id value
-template <error_id errtype> class typed_error_lite : public std::exception {};
+template <error_id errtype>
+class typed_error_lite : public std::exception {};
     
 // or we can go a little further and allow for some additional information
 // this one has a base type and additional info
-template <error_id errtype> class typed_error : public std::runtime_error {
+template <error_id errtype>
+class typed_error : public std::runtime_error {
 public:
-  typed_error(const char* what = errtype): std::runtime_error(what) {}
+  typed_error(const char* what = errtype): 
+  			  std::runtime_error(what) {}
 
   const char *type() const { return errtype; }
   operator const char *() { return errtype; }
@@ -286,12 +300,14 @@ public:
 ```
 // somewhere
 struct FooErrors {
-    static constexpr error_id eFOO = "FOOlib: Foo error";
+    static constexpr error_id eFOO =
+					 "FOOlib: Foo error";
     static           error_id eBAR;
     //...
 };
 // elsewhere
-constexpr error_id FooErrors::eFOO; // a definition is still required
+constexpr error_id FooErrors::eFOO;
+	      // a definition is still required
 error_id FooErrors::eBAR = "FOOlib: Bar error";
 
 ...
@@ -342,10 +358,14 @@ of re-throw is different from the originating thrower.
 ```
     try
     {
-      // something that throws a typed_error<LibA::ePOR>
-      // if LibA::ePOR is not a publically visible value,
-      // it is not possible to write a handler for that case only
-      // nor throw one, except for the code owning that identity
+      // something that throws a
+      // typed_error<LibA::ePOR>
+      // if LibA::ePOR is not a
+      // publically visible value,
+      // it is not possible to write
+      // a handler for that specific case 
+      // nor throw one, except for the
+      // code owning that identity
     }
     catch (typed_error<LibA::eBAR> &e)
     {
@@ -366,14 +386,18 @@ library, component, etc. - thus:
 
 ### Code Sample: simple example for generating "standard" `error_id` value.    
 ```
-#define SCOPE_ERROR(grp, pkg, error_str) grp "-" pkg ": " error_str
+#define SCOPE_ERROR(grp, pkg, error_str) \ 
+                    grp "-" pkg ": " error_str
 
 // this can be used thus
-const char LibA::ePOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
+const char LibA::ePOR[] =
+  SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
 
-// which give us the string  "GRP-FOO: Foo not reparable"
+// which give us the string:
+// "GRP-FOO: Foo not reparable"
 
-// Organisations can exploit other preprocessor features to ensure uniqueness
+// Organisations can exploit other preprocessor
+// features to ensure uniqueness of output
 #define TOSTRING(x) #x
 
 #define SCOPE_ERROR_LOCATION(grp, pkg, error_str)                                \
@@ -427,7 +451,8 @@ This problem is addressed by `error_id` in multiple ways:
 
 ### Code Sample: Generation of identities and unique identities
 ```
-const char N::new_bar[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
+const char N::new_bar[] =
+    SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
  
 assert(strcmp(N::new_bar, FooErrors::eBAR) == 0);
 assert((N::new_bar != FooErrors::eBAR));
