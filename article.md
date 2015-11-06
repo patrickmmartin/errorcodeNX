@@ -642,6 +642,15 @@ of brevity, but which we'll touch upon here to pique your interest.
    - for raw _error id_ this can allow a crude hierarchy of error conditions
       to be defined
 
+Footnotes
+---------
+
+Michael Maguire discovered that due to a compiler bug in IBM's compiler
+TODO(PMM) compiler version?
+the arrays of unspecified size needs to be explicitly decayed.
+The fix is to use +eFOO instead of eFOO when eFOO is to be passed to a
+function template.
+
 
 ### References
 
