@@ -78,6 +78,43 @@ this has a number of critiques on how this will scale:
   all library clients "opt into" the steps required to obtain more
   information on a failed operation
 
+C++11's `std::error_code`
+====
+
+C++11 introduced an interesting approach to deal with errors through
+the classes `std::error_code` and `std::error_condition`: the idea
+of these classes is that error values are represented as enumerators
+with the enum type identifying an error cateogry.  The difference
+between`std::error_code` and `std::error_condition` is that the
+former is for implementation specific handling of errors while the
+latter is portable handing of error messages. Although the two
+classes are different we only refer to `std::error_code` below: the
+same concepts apply to `std::error_condition`.
+
+Each enum type used with an `std::error_code` is mapped to a different
+error category.  An error category is a class derived from `std::error_category`.
+An `std::error_code` object holds an enumerator value stored as
+`int` and a reference to the corresponding `std::error_category`.
+When comparing `std::error_code` objects both the stored `int` and
+the `std::error_category` can be taken into account, allowing for
+a mechanism to create unique `std::error_code` values.
+
+The standard C++ library defines error enums and corresponding
+`std::error_category`s defined for typical system domain.  Users
+can create new error enums and corresponding `std::error_category`s
+to cover non-standard errors. Unfortunately, creating new error
+categories is relatively involved: an enum needs to be created and
+registered as an error enum by specializing `std::is_error_code_enum<E>`,
+an error category needs to be created by inheriting from
+`std::error_category` and implementing its pure virtual functions,
+and `std::make_error_code()` needs to be overloaded for the error
+enum. 
+
+Although `std::error_code` can address uniqueness of errors propagated
+in a system, its use is unfortunately fairly complicated. Especially
+when people are not easily convinced that meaningful errors need
+to be returned a much simpler approach is needed.
+
 error_id type proposal
 ====
 
@@ -532,6 +569,29 @@ some of the common concerns one would come up with and address them:
      becomes more effective to have a facility for text translation
      which would offer more features relevant  to that task than just
      an`error_id`.
+
+Comparison of `error_id` and `std::error_code`
+====
+
+The proposed `error_id` and `std::error_code` have some common
+features. In particular, both address error propagation with and
+without exceptions, both provide uniquely identified errors, and
+both can be globally consumed without requiring declarations of
+all errors.
+
+There are also important differences. For `std::error_code` the
+category yields one level or hierarchical grouping while there is
+no grouping of `error_id`s at all. On the other hand, creating new
+errors with `std::error_code`s requires definition of multiple
+entities while creating an `error_id` is just one definition. If
+the respective specific error should be detectable by users suitable
+declarations in headers are needed in both cases.
+
+A major difference is that `error_id` can be used both with C and
+C++ code while `std::error_code` only works with C++ code.  In code
+bases where different languages are used in the same executable it
+is helpful to use an error reporting scheme available to all of
+these languages.
 
 Wrap up
 =======
