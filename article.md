@@ -645,15 +645,10 @@ of brevity, but which we'll touch upon here to pique your interest.
 Footnotes
 ---------
 
-Michael Maguire discovered that due to a an apparent compiler bug in IBM's xlC V11.1 
+Michael Maguire discovered that due to an apparent compiler bug in IBM's xlC V11.1 
 the arrays of unspecified size `char[]` need to be explicitly decayed.
-The fix is to use +eFOO instead of eFOO when eFOO is to be passed to a
+The fix is to use `+eFOO` instead of `eFOO` when `eFOO` is to be passed to a
 function template.
-A similar, more complex case for that compiler is that templates defined using
-`error_id` as the value parameter fail. This is where a default argument in the class
-employs the template argument - the compiler fails to see the value and compilation fails.
-For this, one workaround appears to be to employ an `extern` declaration of an `error_id`
-thus avoiding presenting an unspecified array as the argument.
 
 
 ### References
