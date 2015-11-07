@@ -56,7 +56,6 @@ TEST_CASE("throw an error_id indirectly", "[exceptions]") {
   SECTION("throw eFOO") {
     try {
       // note we can't throw FooErrors::eFOO, but they can for us
-      // TODO(PMM) existential forgery
       throw_eFOO();
       FAIL("should not be on this side of throw");
     } catch (error_id e) {

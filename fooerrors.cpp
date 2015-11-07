@@ -6,13 +6,12 @@
  */
 
 #include "fooerrors.h"
-#include "error_id.hpp"
 
 // this is a hand-crafted error definition
-const char FooErrors::eFOO[] = "GRP-FOO: Foo clobbered BAR on use";
+error_id FooErrors::eFOO = "GRP-FOO: Foo clobbered BAR on use";
 // and these use the convenience macro
-const char FooErrors::eBAR[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
-const char FooErrors::ePOR[] = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
+error_id FooErrors::eBAR = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
+error_id FooErrors::ePOR = SCOPE_ERROR("GRP", "FOO", "Foo not reparable");
 
 const char *FooErrors::eFOO2 = "GRP-FOO: Foo clobbered BAR on use";
 

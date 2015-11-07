@@ -44,14 +44,11 @@ template <error_id errtype> class typed_error_lite : public std::exception {};
 // this one has a base type and additional info
 template <error_id errtype> class typed_error : public std::runtime_error {
 public:
+  // be very careful to ensure that what is given a NBTS
   typed_error(const char* what = errtype): std::runtime_error(what) {}
 
   const char *type() const { return errtype; }
   operator const char *() { return errtype; }
 };
-
-// And, of course we can define a minimal template parameterised upon an
-// error_id
-//template <error_id errtype> class typed_error_lite : public std::exception {};
 
 #endif /* ERROR_ID_HPP_ */
