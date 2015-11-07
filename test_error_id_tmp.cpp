@@ -27,6 +27,10 @@ public:
   };
 };
 
+template <> void ErrorDispatcher<FooErrors::eFOO>::dispatchError() {
+  dispatch_foo_called = true;
+}
+
 TEST_CASE("demonstrate static dispatchers", "[errorcode]") {
 
   // switch statements are basically just a problem -they mandate constants
@@ -46,10 +50,6 @@ TEST_CASE("demonstrate static dispatchers", "[errorcode]") {
 
   ErrorDispatcher<FooErrors::eBAR>()();
   CHECK(dispatch_default_called);
-}
-
-template <> void ErrorDispatcher<FooErrors::eFOO>::dispatchError() {
-  dispatch_foo_called = true;
 }
 
 // switch statements are basically just a problem -they mandate constants
