@@ -1,4 +1,4 @@
-Defining and Using a Symbol Analogue for Error Reporting in C++
+Identify your Errors better with char[]
 ====
 
 Abstract
