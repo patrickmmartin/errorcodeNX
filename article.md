@@ -84,7 +84,7 @@ C++11's `std::error_code`
 C++11 introduced an interesting approach to deal with errors through
 the classes `std::error_code` and `std::error_condition`: the idea
 of these classes is that error values are represented as enumerators
-with the enum type identifying an error cateogry.  The difference
+with the enum type identifying an error category.  The difference
 between`std::error_code` and `std::error_condition` is that the
 former is for implementation specific handling of errors while the
 latter is portable handing of error messages. Although the two
@@ -481,9 +481,11 @@ This problem is addressed by `error_id` in multiple ways:
    interpret these error states, but any others must be handled using
    the "Internal Error" strategy
  - note also that exposing an `error_id` is no longer a forward
-   commitment, as prior values can be *removed* in new revisions of
-   the interface, in addition to new ones being introduced. This is
-   of course in contrast to integral value return codes.
+   commitment to support that value for all future time, 
+   in contrast to integral value return codes, as prior values can
+   be *removed* in new revisions of the interface, in addition to
+   new ones being introduced and clients addressing removed values
+   will simply fail to compile.
 
 
 ### Code Sample: Generation of identities and unique identities
