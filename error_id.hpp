@@ -27,15 +27,13 @@ typedef char const* error_value;
  */
 #define SCOPE_ERROR(grp, pkg, error_str) grp "-" pkg ": " error_str
 
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
+// Organisations can exploit other preprocessor
+// features to ensure uniqueness of output
 
-#define SCOPE_ERROR_UNIQUE_FULL(grp, pkg, error_str)                                \
-		__FILE__ ":" TOSTRING(__LINE__) " " grp "-" pkg ": " error_str " " __DATE__  __TIME__
+#define TOSTRING(x) #x
 
-#define SCOPE_ERROR_UNIQUE_SHORT(grp, pkg, error_str)                                \
-       (__DATE__   __TIME__  __FILE__ ":" TOSTRING(__LINE__) " " grp "-" pkg ": " error_str ) + 19
-
+#define SCOPE_ERROR_LOCATION(grp, pkg, error_str) \
+        __FILE__ ":" TOSTRING(__LINE__) " " grp "-" pkg ": " error_str " "
 
 // we can define a simple template parameterised upon the error_id value
 template <error_id errtype> class typed_error_lite : public std::exception {};

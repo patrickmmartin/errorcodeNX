@@ -27,8 +27,8 @@ struct N {
 
 
 const char N::new_bar[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
-const char N::new_foo[] = SCOPE_ERROR_UNIQUE_FULL("GRP", "FOO", "Foo not Bar");
-const char N::new_foo2[] = SCOPE_ERROR_UNIQUE_FULL("GRP", "FOO", "Foo not Bar");
+const char N::new_foo[] = SCOPE_ERROR_LOCATION("GRP", "FOO", "Foo not Bar");
+const char N::new_foo2[] = SCOPE_ERROR_LOCATION("GRP", "FOO", "Foo not Bar");
 
 
 }
