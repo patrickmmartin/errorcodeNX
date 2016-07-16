@@ -95,8 +95,8 @@ template <> struct ErrorHandler<FooErrors::eBAR> {
 /**
  * typelist construction to support statically checked error handling
  */
-struct PassType;
-struct FailType;
+struct PassFallThrough;
+struct FailFallThrough;
 template <error_id x, typename xs> struct ErrorList;
 
 /** list checker template
@@ -105,22 +105,31 @@ template <error_id x, typename xs> struct ErrorList;
 template <typename T> struct CheckList {};
 
 /**
- * one base case for the list checker
+ * a base case for the list checker that sets true
  */
-template <> struct CheckList<PassType> {
+template <> struct CheckList<PassFallThrough> {
   void operator()(error_id n, bool &handled) {
     switch_default_pass_called = true || (n) || handled;
   }
 };
 
 /**
- * one base case for the list checker
+ * a base case for the list checker thats sets false
  */
-template <> struct CheckList<FailType> {
+template <> struct CheckList<FailFallThrough> {
   void operator()(error_id n, bool &handled) {
     switch_default_fail_called = true || (n) || handled;
   }
 };
+
+/**
+ * an error case for the list checker
+ */
+//template <> struct CheckList<ErrorType> {
+////private:
+//  void operator()(error_id n, bool &handled) {}
+//};
+
 
 /**
  * handler for the typelist of errors
@@ -154,24 +163,24 @@ TEST_CASE("demonstrate error typelist handlers with fallthrough pass",
    * passed in with fall-through
    * X, Y
    */
-  typedef ErrorList<FooErrors::eFOO, ErrorList<FooErrors::eBAR, PassType> >
-      ErrorsXY;
+  typedef ErrorList<FooErrors::eFOO, ErrorList<FooErrors::eBAR, PassFallThrough> >
+      ErrorsFooBar;
 
   // exercising with constants
-  CheckList<ErrorsXY>()(FooErrors::eFOO);
-  CheckList<ErrorsXY>()(FooErrors::eBAR);
-  CheckList<ErrorsXY>()(FooErrors::ePOR);
+  CheckList<ErrorsFooBar>()(FooErrors::eFOO);
+  CheckList<ErrorsFooBar>()(FooErrors::eBAR);
+  CheckList<ErrorsFooBar>()(FooErrors::ePOR);
 
   // exercising with variables
   error_value K = FooErrors::eFOO;
-  CheckList<ErrorsXY>()(K);
+  CheckList<ErrorsFooBar>()(K);
   CHECK(switch_foo_called);
 
   K = FooErrors::eBAR;
-  CheckList<ErrorsXY>()(K);
+  CheckList<ErrorsFooBar>()(K);
 
   K = FooErrors::ePOR;
-  CheckList<ErrorsXY>()(K);
+  CheckList<ErrorsFooBar>()(K);
   CHECK(switch_default_pass_called);
 }
 
@@ -187,8 +196,10 @@ TEST_CASE("demonstrate typelist handlers with fallthrough fail",
    * passed and fall-through is an error
    * X, Y
    */
-  typedef ErrorList<FooErrors::eFOO, ErrorList<FooErrors::eBAR, FailType> >
-      ErrorsXYOnly;
+  typedef ErrorList<FooErrors::eFOO,
+		  	  ErrorList<FooErrors::eBAR,
+			  	  FailFallThrough> >
+      ErrorsFooBarOnly;
 
   // exercising with variables
   error_value K = FooErrors::eFOO;
@@ -196,20 +207,26 @@ TEST_CASE("demonstrate typelist handlers with fallthrough fail",
   // exercising with variables
   K = FooErrors::eFOO;
 
-  CheckList<ErrorsXYOnly>()(K);
+  CheckList<ErrorsFooBarOnly>()(K);
   CHECK(switch_foo_called);
 
   K = FooErrors::eBAR;
-  CheckList<ErrorsXYOnly>()(K);
+  CheckList<ErrorsFooBarOnly>()(K);
 
   K = FooErrors::ePOR;
-  CheckList<ErrorsXYOnly>()(K);
+  CheckList<ErrorsFooBarOnly>()(K);
   CHECK(switch_default_fail_called);
 
   // illustrates statically mandating handlers for specified error codes
-  // this cannot compile without an implementation of ErrorHandler<FooErrors::Z>
-  // error: invalid use of incomplete type 'struct ErrorHandler<((const char*)(&
-  // FooErrors::Z))>'
-  //    K = FooErrors::Z;
-  //    CheckList<ErrorsXYZ>()(K);
+  // this cannot compile without an implementation of ErrorHandler<FooErrors::ePOR>
+  // error: invalid use of incomplete type 'struct ErrorHandler<((const char*)(& FooErrors::ePOR))>'
+
+//  typedef ErrorList<FooErrors::eFOO,
+//		  	  ErrorList<FooErrors::eBAR,
+//  	  	  	  	  	ErrorList<FooErrors::ePOR,
+//						FailType> > >
+//      ErrorsFooBarPorRequired;
+
+//  K = FooErrors::ePOR;
+//  CheckList<ErrorsFooBarPorRequired>()(K);
 }
