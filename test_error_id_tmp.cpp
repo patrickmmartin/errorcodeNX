@@ -123,15 +123,6 @@ template <> struct CheckList<FailFallThrough> {
 };
 
 /**
- * an error case for the list checker
- */
-//template <> struct CheckList<ErrorType> {
-////private:
-//  void operator()(error_id n, bool &handled) {}
-//};
-
-
-/**
  * handler for the typelist of errors
  */
 template <error_id x, typename xs> struct CheckList<ErrorList<x, xs> > {
@@ -221,12 +212,12 @@ TEST_CASE("demonstrate typelist handlers with fallthrough fail",
   // this cannot compile without an implementation of ErrorHandler<FooErrors::ePOR>
   // error: invalid use of incomplete type 'struct ErrorHandler<((const char*)(& FooErrors::ePOR))>'
 
-//  typedef ErrorList<FooErrors::eFOO,
-//		  	  ErrorList<FooErrors::eBAR,
-//  	  	  	  	  	ErrorList<FooErrors::ePOR,
-//						FailType> > >
-//      ErrorsFooBarPorRequired;
+  //  typedef ErrorList<FooErrors::eFOO,
+  //               ErrorList<FooErrors::eBAR,
+  //                    ErrorList<FooErrors::ePOR,
+  //                         FailType> > >
+  //      ErrorsFooBarPorRequired;
 
-//  K = FooErrors::ePOR;
-//  CheckList<ErrorsFooBarPorRequired>()(K);
+  //  K = FooErrors::ePOR;
+  //  CheckList<ErrorsFooBarPorRequired>()(K);
 }
