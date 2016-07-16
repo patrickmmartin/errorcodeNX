@@ -8,8 +8,6 @@
 #ifndef ERROR_ID_HPP_
 #define ERROR_ID_HPP_
 
-#include <stdexcept>
-
 // error_id defines an array value, which must be initialised from a string literal
 // the _content_ of the error_id may or may not be unique, but following on from ODR
 // the pointer in a statically linked application must be unique,
@@ -44,19 +42,5 @@ typedef char const* error_value;
 
 #define SCOPE_ERROR_LOCATION(grp, pkg, error_str) \
         __FILE__ ":" TOSTR(__LINE__) " " grp "-" pkg ": " error_str " "
-
-// we can define a simple template parameterised upon the error_id value
-template <error_id errtype> class typed_error_lite : public std::exception {};
-
-// or we can go a little further and allow for some additional information
-// this one has a base type and additional info
-template <error_id errtype> class typed_error : public std::runtime_error {
-public:
-  // be very careful to ensure that what is given a NBTS
-  typed_error(const char* what = errtype): std::runtime_error(what) {}
-
-  const char *type() const { return errtype; }
-  operator const char *() { return errtype; }
-};
 
 #endif /* ERROR_ID_HPP_ */

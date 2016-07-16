@@ -11,6 +11,7 @@
 #include <stddef.h>
 
 #include "error_id.hpp"
+#include "except_id.hpp"
 
 class LibA {
 
