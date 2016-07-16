@@ -27,14 +27,14 @@ struct N {
 
 
 const char N::new_bar[] = SCOPE_ERROR("GRP", "FOO", "Foo not Bar");
-const char N::new_foo[] = SCOPE_ERROR_LOCATION("GRP", "FOO", "Foo not Bar");
-const char N::new_foo2[] = SCOPE_ERROR_LOCATION("GRP", "FOO", "Foo not Bar");
+const char N::new_foo[] = SCOPE_ERROR_LOCATION("GRP", "FOO", "Foo not Bar");   int new_foo_line = __LINE__;
+const char N::new_foo2[] = SCOPE_ERROR_LOCATION("GRP", "FOO", "Foo not Bar");  int new_foo2_line = __LINE__;
 
 
 }
 
 
-TEST_CASE("check macro works", "[errorcode]") {
+TEST_CASE("check the macros work", "[errorcode]") {
 
   INFO(N::new_bar);
   INFO("equality of error strings generated the same way is possible");
@@ -49,8 +49,19 @@ TEST_CASE("check macro works", "[errorcode]") {
   INFO(N::new_bar);
   CHECK((N::new_bar != FooErrors::eBAR));
   INFO("checking the simple macro");
+
   INFO(N::new_foo2);
   CHECK((N::new_foo != N::new_foo2));
+
+  INFO("checking the complex macro");
+
+  std::ostringstream os;
+  os << __FILE__ << ":" << new_foo_line << " " << "GRP"<< "-" << "FOO" << ": " << "Foo not Bar ";
+  CHECK(N::new_foo == os.str());
+
+  os.str(""); os.clear();
+  os << __FILE__ << ":" << new_foo2_line << " " << "GRP"<< "-" << "FOO" << ": " << "Foo not Bar ";
+  CHECK(N::new_foo2 == os.str());
 
 }
 
