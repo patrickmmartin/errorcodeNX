@@ -8,8 +8,6 @@ OBJS = fooerrors.o\
 	   test_error_id_tmp.o\
 	   test_typed_error.o  
 
-DUMPOBJS =
-
 LIBS =
 
 ifeq ($(OS),Windows_NT)
@@ -20,7 +18,10 @@ endif
 
 TARGETS = $(TESTS)
 
-$(TESTS): $(MAIN) $(OBJS)
+Default:
+	mkdir -p Default
+
+$(TESTS): Default $(MAIN) $(OBJS)
 	$(CXX) -o $(TESTS) $(MAIN) $(OBJS) $(LIBS) $(CXXFLAGS)
 
 
@@ -36,7 +37,7 @@ test_typed_error.o: error_id.hpp
 all:	$(TARGETS)
 
 clean:
-	rm -f $(MAIN) $(OBJS) $(TARGETS)
+	-rm -f $(MAIN) $(OBJS) $(TARGETS)
 
 	
 format:
