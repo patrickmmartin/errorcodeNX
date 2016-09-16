@@ -208,16 +208,17 @@ TEST_CASE("demonstrate typelist handlers with fallthrough fail",
   CheckList<ErrorsFooBarOnly>()(K);
   CHECK(switch_default_fail_called);
 
-  // illustrates statically mandating handlers for specified error codes
-  // this cannot compile without an implementation of ErrorHandler<FooErrors::ePOR>
-  // error: invalid use of incomplete type 'struct ErrorHandler<((const char*)(& FooErrors::ePOR))>'
+//   illustrates statically mandating handlers for specified error codes
+//   this cannot compile without an implementation of ErrorHandler<FooErrors::ePOR>
+//   error: invalid use of incomplete type 'struct ErrorHandler<((const char*)(& FooErrors::ePOR))>'
 
-  //  typedef ErrorList<FooErrors::eFOO,
-  //               ErrorList<FooErrors::eBAR,
-  //                    ErrorList<FooErrors::ePOR,
-  //                         FailType> > >
-  //      ErrorsFooBarPorRequired;
+//  typedef ErrorList<FooErrors::eFOO,
+//		  	  ErrorList<FooErrors::eBAR,
+//			  	  ErrorList<FooErrors::ePOR,
+//			  	  	  FailFallThrough> > >
+//      ErrorsFooBarPorRequired;
+//
+//    K = FooErrors::ePOR;
+//    CheckList<ErrorsFooBarPorRequired>()(K);
 
-  //  K = FooErrors::ePOR;
-  //  CheckList<ErrorsFooBarPorRequired>()(K);
 }
